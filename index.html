@@ -984,17 +984,9 @@ function computeStockModel(o, l, pausas, cur, isFirstOrder, effStart, effEnd, ne
     stockMap[s] = stk;
   }
 
-  // ── 4. Gerar sinais: stock[s] < pRep → sinal em s ────────────────────
-  //
-  // sigStart: primeiro slot possível para um sinal
-  //   = effStart - taSlots (1º lote chega pronto no arranque)
-  //
-  // minSlot: avança com cada confirmed (armário ocupado por taSlots)
-  //   e com cada sinal gerado neste ciclo
-  //
-  // Espaçamento: taSlots entre sinais (armário ocupado)
+  
 
-let minSlot = sigStart;
+  let minSlot = sigStart;
 
   while (logsRestantes > 0) {
     const qtd = Math.min(lote, logsRestantes);
