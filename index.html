@@ -994,15 +994,7 @@ function computeStockModel(o, l, pausas, cur, isFirstOrder, effStart, effEnd, ne
   //
   // Espaçamento: taSlots entre sinais (armário ocupado)
 
-  const sigStart = Math.max(0, effStart - taSlots);
-  let minSlot = sigStart;
-  // minSlot = último confirmed + taSlots (armário fisicamente ocupado)
-  // O espaçamento entre sinais é determinado naturalmente pelo stockMap/pRep:
-  // após cada confirmed, o stock sobe e só volta a cair abaixo de pRep
-  // quando o lote está quase esgotado — isso determina o próximo sinal.
-  Object.entries(newLs).forEach(([ss, v]) => {
-    if (v.st === 'confirmed') minSlot = Math.max(minSlot, (+ss) + taSlots);
-  });
+let minSlot = sigStart;
 
   while (logsRestantes > 0) {
     const qtd = Math.min(lote, logsRestantes);
