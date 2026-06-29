@@ -1,0 +1,3437 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nobre · Planeador de Abastecimento</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#EEECE1;--sf:#FFF;--sf2:#F5F3EB;
+  --bd:#D4CFC0;--bd2:#C5BFA8;
+  --tx:#1A1A1A;--tx2:#505046;--mu:#88887A;
+  --red:#B64926;--ora:#E84C22;--gld:#CC9900;
+  --sp:#E8F0F8;--sy:#FFFACC;--sy-b:#C8A800;
+  --sr:#FFDDDD;--sr-b:#CC4422;
+  --sg:#D4F0E0;--sg-b:#2A8A50;
+  --splan:#EDEAE0;--splan-b:#A8A48A;
+  --sau:#E0DDD0;--snow:#B64926;
+  --sw:38px;--rh:26px;--nh:48px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow','Calibri',sans-serif;background:var(--bg);color:var(--tx);font-size:12px;min-height:100vh;}
+nav{height:var(--nh);background:var(--red);display:flex;align-items:center;padding:0 16px;position:sticky;top:0;z-index:400;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.nbrand{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:#fff;letter-spacing:1.5px;padding-right:16px;border-right:1px solid rgba(255,255,255,.3);margin-right:4px;}
+.ntab{font-size:12px;font-weight:600;color:rgba(255,255,255,.7);padding:0 14px;height:var(--nh);display:flex;align-items:center;cursor:pointer;border-bottom:3px solid transparent;transition:all .12s;white-space:nowrap;}
+.ntab:hover{color:#fff;background:rgba(255,255,255,.1);}.ntab.active{color:#fff;border-bottom-color:#fff;}
+.nright{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.nclk{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:#fff;letter-spacing:1px;}
+.ndt{font-size:10px;color:rgba(255,255,255,.6);}
+.nbtn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;border-radius:3px;}
+.nbtn:hover{background:rgba(255,255,255,.28);}
+.page{display:none;}.page.active{display:block;}
+
+/* ── PLANEAMENTO ── */
+#page-plan{padding:14px 16px;}
+.plan-date-header{background:var(--sf);border:1px solid var(--bd);border-radius:3px;padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.plan-date-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--mu);}
+.plan-date-val{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--red);}
+.plan-date-file{font-size:11px;color:var(--mu);}
+.plw{background:var(--sf);border:1px solid var(--bd);border-radius:3px;margin-bottom:10px;overflow:hidden;}
+.plttl{background:var(--sf2);border-bottom:2px solid var(--red);padding:6px 12px;display:flex;align-items:center;gap:8px;}
+.plttl b{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--red);}
+.plhdr{display:grid;grid-template-columns:28px 72px 90px 1fr 86px 76px 64px 62px 62px 24px;background:var(--red);color:#fff;font-size:10px;font-weight:700;letter-spacing:.4px;}
+.plhdr>div{padding:5px 6px;}
+.plrow{display:grid;grid-template-columns:28px 72px 90px 1fr 86px 76px 64px 62px 62px 24px;border-bottom:1px solid #F0EDE0;align-items:center;min-height:30px;}
+.plrow:hover{background:#FAF8F0;}.plrow.drag-over{background:#FFF5EE;border-top:2px solid var(--ora);}.plrow.dragging{opacity:.4;}
+.dh{cursor:grab;color:#CCC;padding:0 6px;font-size:16px;display:flex;align-items:center;justify-content:center;user-select:none;}.dh:hover{color:var(--red);}
+.plc{padding:3px 6px;}
+.plinp{width:100%;background:transparent;border:none;border-bottom:1px solid transparent;font-size:12px;font-family:inherit;color:var(--tx);padding:2px 4px;outline:none;}
+.plinp:hover{border-bottom-color:var(--bd2);}.plinp:focus{border-bottom-color:var(--ora);background:#FFF9F5;}
+.plsel{width:100%;background:transparent;border:none;border-bottom:1px solid transparent;font-size:11px;font-family:inherit;color:var(--tx);padding:2px;outline:none;cursor:pointer;}
+.ptag{display:inline-block;padding:1px 6px;border-radius:2px;font-size:10px;font-weight:700;}
+.p1{background:#E8F4D8;color:#3A7010;}.p2{background:#D8EEF5;color:#1A5880;}.p3{background:#F5EAD8;color:#7A4010;}
+.p4{background:#FFF5CC;color:#7A5A00;}.p5{background:#F8D8D8;color:#7A1010;}.p6{background:#D8F0E8;color:#1A7040;}
+.btnadd{background:transparent;border:1px dashed var(--bd2);color:var(--mu);padding:4px 0;font-size:11px;font-weight:600;cursor:pointer;width:100%;}
+.btnadd:hover{border-color:var(--ora);color:var(--ora);}
+.btndel{background:transparent;border:none;color:#CCC;cursor:pointer;font-size:15px;padding:0 4px;line-height:1;}.btndel:hover{color:var(--ora);}
+
+/* ── DASHBOARD ── */
+#page-dash{padding:0 16px 10px;}
+.dash-sticky{position:sticky;top:var(--nh);z-index:100;background:var(--bg);padding:10px 0 6px;border-bottom:1px solid var(--bd2);margin-bottom:8px;}
+.dtop{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.dttl{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:var(--red);}
+.ltabs{display:flex;gap:3px;background:var(--sf);border:1px solid var(--bd);border-radius:3px;padding:4px;}
+.ltab{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;padding:7px 18px;cursor:pointer;border-radius:2px;color:var(--mu);display:flex;align-items:center;gap:6px;}
+.ltab:hover{color:var(--tx);}.ltab.active{background:var(--red);color:#fff;}
+.ltab-dot{width:9px;height:9px;border-radius:50%;background:#CCC;flex-shrink:0;}
+.ltab-dot.ok{background:#2A8A50;}
+.ltab-dot.warn{background:#CC9900;}
+.ltab-dot.err{background:#CC4422;}
+.chkp{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx2);cursor:pointer;user-select:none;}
+.chkp input{accent-color:var(--red);}
+.cbar{background:var(--sf);border:1px solid var(--bd);border-radius:3px;padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.clbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--mu);}
+.tminp{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;background:#F5F3EB;border:1px solid var(--bd2);border-radius:3px;padding:3px 8px;color:var(--tx);outline:none;width:90px;}
+.tminp:focus{border-color:var(--red);}
+.btnnow{background:var(--red);color:#fff;border:none;border-radius:3px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;}
+.sbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.schip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:3px;font-size:12px;font-weight:600;border:1px solid;}
+.schip.ok{background:#D4F0E0;border-color:var(--sg-b);color:#1A5A30;}
+.schip.late{background:#FFDDDD;border-color:var(--sr-b);color:#8A2020;}
+.schip.neu{background:var(--sf2);border-color:var(--bd2);color:var(--mu);}
+.kstrip{display:flex;gap:8px;margin-bottom:8px;}
+.kc{background:var(--sf);border:1px solid var(--bd);border-radius:3px;padding:4px 10px;flex:1;}
+.kl{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--mu);}
+.kv{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;line-height:1.1;}
+.leg{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+.li{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--tx2);}
+.ld{width:18px;height:12px;border-radius:2px;border:1px solid rgba(0,0,0,.1);}
+
+/* GRID */
+.gwrap{background:var(--sf);border:1px solid var(--bd);border-radius:3px;overflow:hidden;}
+.gscroll{overflow-x:auto;overflow-y:auto;}
+/* Sticky header: precisa que o container de scroll tenha ambos overflow definidos */
+.gscroll::-webkit-scrollbar{height:5px;}
+.gscroll::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px;}
+table.gt{border-collapse:collapse;table-layout:fixed;width:max-content;font-size:11px;}
+.co{width:62px;}.cp{width:74px;}.cd{width:145px;}.cs{width:88px;}.csl{width:var(--sw);}
+.sx0{position:sticky;left:0;z-index:8;background:var(--sf);}
+.sx1{position:sticky;left:62px;z-index:8;background:var(--sf);}
+.sx2{position:sticky;left:136px;z-index:8;background:var(--sf);}
+.sx1b{position:sticky;left:281px;z-index:8;background:var(--sf);}
+.sx3{position:sticky;left:541px;z-index:8;background:var(--sf);}
+/* Caixa do controlo "Simular hora" alinhada à direita da barra do topo */
+.simwrap{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--sf);border:1px solid var(--bd);border-radius:3px;padding:5px 10px;}
+.order-done td{background:rgba(42,138,80,.09)!important;}
+.order-done td.sc:not(.sau) .si{background:rgba(42,138,80,.13)!important;}
+.order-done td.om{border-left:3px solid var(--sg-b)!important;background:#E9F4EE!important;}
+.sx3a{position:sticky;left:337px;z-index:8;background:var(--sf);width:52px;min-width:52px;max-width:52px;}
+.sx3b{position:sticky;left:389px;z-index:8;background:var(--sf);width:52px;min-width:52px;max-width:52px;}
+.sx3c{position:sticky;left:441px;z-index:8;background:var(--sf);width:52px;min-width:52px;max-width:52px;}.sx3d{position:sticky;left:493px;z-index:9;background:var(--sf);width:48px;min-width:48px;max-width:48px;border-right:2px solid var(--red) !important;}
+
+
+/* Header */
+thead tr.hdr th{
+  background:var(--red);color:#fff;
+  border-right:1px solid rgba(255,255,255,.2);
+  text-align:center;padding:4px 0;
+  position:sticky;top:0;z-index:15;
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;white-space:nowrap;
+}
+thead tr.hdr th.hinfo{text-align:left;padding:4px 8px;position:sticky;z-index:20;top:0;}
+td.csk,th.csk{min-width:56px;max-width:56px;width:56px;text-align:center;border-right:1px solid var(--bd);padding:2px 3px;}
+/* Current slot: highlight full column with left+right border, slightly lighter bg */
+thead tr.hdr th.hnow{
+  background:#7A2010!important;
+  border-left:2px solid #FFD0A0!important;
+  border-right:2px solid #FFD0A0!important;
+  font-weight:900;
+}
+thead tr.hdr th.hsep{border-right:2px solid rgba(255,255,255,.4)!important;}
+
+/* Pausa */
+tr.pr{position:sticky;top:24px;z-index:12;}
+tr.pr td{background:var(--sf2);height:20px;border-bottom:2px solid var(--bd2);}
+tr.pr td.sx0,tr.pr td.sx1,tr.pr td.sx1b,tr.pr td.sx2,tr.pr td.sx3a,tr.pr td.sx3b,tr.pr td.sx3c,tr.pr td.sx3d,tr.pr td.sx3{z-index:13;}
+td.plbl{font-size:9px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.8px;padding:0 8px;border-right:2px solid var(--bd2)!important;background:var(--sf2);}
+td.psl{cursor:pointer;border-right:1px solid #DDD8C8;}
+td.psl:hover{background:#DDD8C0;}
+td.psl.ip{background:var(--sau);}
+td.psl.ip::after{content:'|';font-size:9px;display:flex;align-items:center;justify-content:center;height:100%;color:var(--mu);}
+td.hs{border-right:2px solid var(--bd2)!important;}
+
+/* Slot column border highlight for "now" */
+td.sc.cnow{
+  border-left:2px solid #E84C22!important;
+  border-right:2px solid #E84C22!important;
+}
+/* Override so cnow beats hsep */
+td.sc.hs.cnow{border-right:2px solid #E84C22!important;}
+
+/* Order rows */
+tr.orsep td{border-top:2px solid var(--bd2)!important;}
+tr.or td{height:var(--rh);border-right:1px solid #EAE6D8;vertical-align:middle;padding:0 5px;background:var(--sf);}
+td.om{vertical-align:middle;background:var(--sf);}
+td.om.inp{background:#F8F2E8!important;}
+/* Ordem activa em produção (1ª entrega feita) */
+.order-active td{background:#FFF8F0!important;}
+.order-active td.om{background:#FFF4E8!important;border-left:3px solid var(--ora)!important;}
+.order-active td.sc.sp .si{background:#E0ECF8;}
+td.oor{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;color:var(--mu);}
+tr.or.order-active td.oor{color:var(--ora)!important;}
+td.opi{font-family:'Barlow Condensed',sans-serif;font-size:13px;color:#1A5880;font-weight:700;}
+td.ode{font-size:10px;font-weight:500;white-space:normal;word-break:break-word;line-height:1.3;max-width:145px;padding:2px 5px!important;}
+td.slbl{font-size:10px;font-weight:700;color:var(--tx2);white-space:nowrap;border-right:2px solid var(--bd2)!important;}
+td.sc{padding:0;border-right:1px solid #E8E4D8;position:relative;}
+td.sc.hs{border-right:2px solid var(--bd2)!important;}
+td.sc .si{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+td.sc.sp .si{background:var(--sp);}
+td.sc.sy .si{background:var(--sy);border-top:1px solid var(--sy-b);border-bottom:1px solid var(--sy-b);cursor:pointer;}
+td.sc.smiss .si{background:var(--sr);}
+td.sc.splan .si{background:var(--splan);border-top:1px solid var(--splan-b);border-bottom:1px solid var(--splan-b);cursor:pointer;}
+td.sc.sg .si{background:var(--sg);}
+td.sc.sau .si{background:var(--sau);}
+.sinp{width:100%;background:transparent;border:none;font-size:10px;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center;outline:none;padding:2px 0;border-bottom:1px solid transparent;}
+.sinp:hover{border-bottom-color:var(--bd2);}.sinp:focus{background:#FFF9F5;border-bottom-color:var(--ora);}
+.sinp::-webkit-inner-spin-button{-webkit-appearance:none;}
+.lwrap{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;gap:1px;}
+.lval{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;line-height:1;cursor:pointer;}
+.ledit{width:calc(100% - 4px);border:1px solid #B0A000;border-radius:2px;font-size:10px;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center;padding:1px;background:#FFFDE0;outline:none;display:none;}
+
+/* dados */
+#page-dados{padding:14px 16px;}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.dc{background:var(--sf);border:1px solid var(--bd);border-radius:3px;overflow:hidden;}
+.dch{background:var(--red);color:#fff;padding:7px 12px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;}
+.dtbl{width:100%;border-collapse:collapse;font-size:11px;}
+.dtbl th{background:var(--sf2);padding:5px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--mu);border-bottom:2px solid var(--bd);}
+.dtbl td{padding:5px 8px;border-bottom:1px solid #F0EDE0;vertical-align:middle;}
+.dtbl tr:hover td{background:#FAF8F0;}
+.dinp{width:60px;border:1px solid var(--bd);border-radius:2px;padding:3px 5px;font-size:11px;font-family:inherit;font-weight:600;text-align:center;outline:none;background:#fff;}
+.dinp:focus{border-color:var(--ora);}
+.bw{width:70px;height:6px;background:#EDE9DC;border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:4px;}
+.bf{height:100%;border-radius:3px;}
+.upz{border:2px dashed var(--bd2);border-radius:5px;padding:28px;text-align:center;background:var(--sf);cursor:pointer;transition:all .12s;margin-bottom:14px;}
+.upz:hover,.upz.drag{border-color:var(--ora);background:#FFF5F0;}
+.upz p{color:var(--mu);font-size:11px;margin-top:5px;}
+#tip{display:none;position:fixed;background:rgba(20,20,20,.9);color:#fff;border-radius:3px;padding:4px 9px;font-size:11px;pointer-events:none;z-index:999;white-space:nowrap;}
+.alert-badge{display:inline-flex;align-items:center;gap:5px;background:#CC4422;color:#fff;border-radius:3px;padding:3px 10px;font-size:11px;font-weight:700;animation:pulse-red 1.2s ease-in-out infinite;}
+@keyframes pulse-red{0%,100%{opacity:1;}50%{opacity:.55;}}
+@keyframes pulse-green{0%,100%{outline-color:#2A8A50;}50%{outline-color:transparent;}}
+#tip.on{display:block;}
+/* ── LOGIN ── */
+#page-login{min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;}
+.login-box{width:100%;max-width:380px;}
+.login-brand{text-align:center;margin-bottom:32px;}
+.login-logo{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;background:var(--red);border-radius:12px;margin-bottom:12px;}
+.login-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--tx);letter-spacing:1px;}
+.login-sub{font-size:12px;color:var(--mu);margin-top:2px;}
+.login-card{background:var(--sf);border:1px solid var(--bd);border-radius:6px;padding:28px 32px;box-shadow:0 2px 12px rgba(0,0,0,.08);}
+.login-card h2{font-size:15px;font-weight:700;color:var(--tx);margin-bottom:20px;}
+.lbl{display:block;font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.linp{width:100%;padding:8px 10px;font-size:13px;font-family:inherit;border:1px solid var(--bd);border-radius:4px;outline:none;background:#FAFAF5;color:var(--tx);margin-bottom:14px;box-sizing:border-box;}
+.linp:focus{border-color:var(--ora);}
+.lbtn{width:100%;background:var(--red);color:#fff;border:none;border-radius:4px;padding:10px 0;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:background .12s;}
+.lbtn:hover{background:var(--ora);}.lbtn:disabled{background:var(--bd2);cursor:not-allowed;}
+.lerr{background:var(--sr);border:1px solid var(--sr-b);border-radius:4px;padding:8px 12px;font-size:12px;color:var(--sr-b);margin-bottom:14px;display:none;}
+.lerr.on{display:block;}
+.login-foot{text-align:center;margin-top:16px;font-size:11px;color:var(--mu);}
+.nrole{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;color:#fff;}
+.npres{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;}
+.npres-dot{width:8px;height:8px;border-radius:50%;background:#9aa;display:inline-block;}
+.npres.live .npres-dot{background:#3ad36b;box-shadow:0 0 0 0 rgba(58,211,107,.7);animation:npresPulse 2s infinite;}
+@keyframes npresPulse{0%{box-shadow:0 0 0 0 rgba(58,211,107,.6)}70%{box-shadow:0 0 0 6px rgba(58,211,107,0)}100%{box-shadow:0 0 0 0 rgba(58,211,107,0)}}
+</style>
+</head>
+<body>
+<!-- LOGIN PAGE -->
+<div id="page-login">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="login-logo"><span style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:800;color:#fff">N</span></div>
+      <div class="login-title">NOBRE</div>
+      <div class="login-sub">Planeador de Abastecimento</div>
+    </div>
+    <div class="login-card">
+      <h2>Entrar</h2>
+      <div class="lerr" id="lerr">Email ou password incorrectos.</div>
+      <label class="lbl">Email</label>
+      <input class="linp" type="email" id="lemail" placeholder="nome@nobre.pt" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()">
+      <label class="lbl">Password</label>
+      <input class="linp" type="password" id="lpass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="lbtn" id="lbtn" onclick="doLogin()">Entrar</button>
+    </div>
+    <div class="login-foot">Kaizen Institute · Nobre &copy; 2026</div>
+  </div>
+</div>
+
+<nav id="main-nav" style="display:none">
+  <div class="nbrand">NOBRE</div>
+  <div class="ntab active" id="tab-plan" onclick="goTo('page-plan')">Planeamento</div>
+  <div class="ntab" id="tab-dash" onclick="goTo('page-dash')">Dashboard</div>
+  <div class="ntab" id="tab-dados" onclick="goTo('page-dados')">Dados de Producao</div>
+  <div class="ntab" id="tab-pausas" onclick="goTo('page-pausas')">Pausas</div>
+  <div class="nright">
+    <div style="text-align:right"><div class="nclk" id="nclk"></div><div class="ndt" id="ndt"></div></div>
+    <div class="npres" id="npres" title="Pessoas com o dashboard aberto agora">
+      <span class="npres-dot"></span><span id="npresTxt">—</span>
+    </div>
+    <div class="nrole" id="nrole"></div>
+    <span id="nnome" style="font-size:12px;color:rgba(255,255,255,.85);font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+    <label class="nbtn" id="btnXL" style="display:none">&#128202; Carregar Excel<input type="file" id="fInp" accept=".xlsx,.xls" style="display:none" onchange="loadXL(this)"></label>
+    <button class="nbtn" id="btnLimpar" style="display:none;opacity:.6;font-size:10px" onclick="clearState()">&#128465; Limpar</button>
+    <button class="nbtn" style="opacity:.7;font-size:10px" onclick="doSignOut()">Sair</button>
+  </div>
+</nav>
+
+<div id="app-pages" style="display:none"><div class="page active" id="page-plan">
+  <div class="plan-date-header" id="planDateHdr" style="display:none">
+    <span class="plan-date-label">Plano do dia:</span>
+    <span class="plan-date-val" id="planDateVal">—</span>
+    <span class="plan-date-file" id="planDateFile"></span>
+  </div>
+  <div class="upz" id="upz" onclick="document.getElementById('fInp').click()"
+    ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')"
+    ondrop="event.preventDefault();this.classList.remove('drag');loadXLF(event.dataTransfer.files[0])">
+    <div style="font-size:28px">&#128202;</div>
+    <strong>Arrasta ou clica para carregar o Excel de planeamento</strong>
+    <p>Colunas obrigatórias: <b>LINHA</b> (I–VI ou 1–6) · <b>PI</b> (7 dígitos) · <b>KG Entrada</b></p>
+    <p style="margin-top:3px">Colunas opcionais: Hora Inicio · KGs · OP (ordem de produção)</p>
+    <p style="margin-top:3px;color:#AAA8A0">Formato .xlsx ou .xls · Todas as sheets são pesquisadas automaticamente</p>
+  </div>
+  <div id="planC"></div>
+</div>
+
+<div class="page" id="page-dash">
+  <div class="dash-sticky">
+  <div class="dtop">
+    <div class="dttl" id="dttl">Linha 3</div><span id="dttl-badge" style="font-size:11px;font-weight:600;color:var(--mu);background:var(--sf2);border:1px solid var(--bd);border-radius:3px;padding:2px 8px;margin-left:4px"></span>
+    <div class="ltabs" id="ltabs">
+      <div class="ltab" id="ltab-1" onclick="selL(1)"><span class="ltab-dot" id="ldot-1"></span>L1</div>
+      <div class="ltab" id="ltab-2" onclick="selL(2)"><span class="ltab-dot" id="ldot-2"></span>L2</div>
+      <div class="ltab active" id="ltab-3" onclick="selL(3)"><span class="ltab-dot" id="ldot-3"></span>L3</div>
+      <div class="ltab" id="ltab-4" onclick="selL(4)"><span class="ltab-dot" id="ldot-4"></span>L4</div>
+      <div class="ltab" id="ltab-5" onclick="selL(5)"><span class="ltab-dot" id="ldot-5"></span>L5</div>
+      <div class="ltab" id="ltab-6" onclick="selL(6)"><span class="ltab-dot" id="ldot-6"></span>L6</div>
+    </div>
+    <label class="chkp"><input type="checkbox" id="chkP" checked> Pausas</label>
+    <div class="simwrap">
+      <span class="clbl">Simular hora:</span>
+      <input type="time" id="simTime" class="tminp" oninput="onSimChange()">
+      <button class="btnnow" onclick="document.getElementById('simTime').value='';onSimChange()">Agora</button>
+      <button class="btnnow" style="background:var(--tx2)" onclick="scrollToNow()" title="Centrar no slot atual">&#8594; Ir para agora</button>
+    </div>
+  </div>
+  <div class="cbar">
+    <span class="clbl">Estado:</span>
+    <div class="sbar" id="sbar"></div>
+  </div>
+  <div class="kstrip" id="kstrip"></div>
+  <div class="leg">
+    <div class="li"><div class="ld" style="background:var(--sp);border-color:#B8CDE0"></div>Producao</div>
+    <div class="li"><div class="ld" style="background:var(--sy);border-color:var(--sy-b)"></div>Colocar lote</div>
+    <div class="li"><div class="ld" style="background:var(--sr);border-color:var(--sr-b)"></div>Lote em falta</div>
+    <div class="li"><div class="ld" style="background:var(--sg);border-color:var(--sg-b)"></div>Confirmado</div>
+    <div class="li"><div class="ld" style="background:var(--splan);border-color:#A8A48A"></div>Arref. planeado</div>
+    <div class="li"><div class="ld" style="background:var(--sau);border-color:#B0A880"></div>Pausa</div>
+    <div class="li"><div class="ld" style="background:#7A2010;border-color:#E84C22"></div>Agora</div>
+  </div>
+  </div><!-- /dash-sticky -->
+  <div class="gwrap"><div class="gscroll" id="gscroll" style="max-height:calc(100vh - var(--nh) - 220px);overflow-y:auto;">
+    <table class="gt"><thead id="gHd"></thead><tbody id="gBd"></tbody></table>
+  </div></div>
+</div>
+
+<div class="page" id="page-dados"><div class="dg" id="dg"></div></div>
+<div class="page" id="page-pausas" style="padding:20px 24px;max-width:700px">
+  <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--red);margin-bottom:16px;letter-spacing:.5px">GESTÃO DE PAUSAS</div>
+  <p style="font-size:12px;color:var(--mu);margin-bottom:20px">Define os períodos de pausa por linha. Os slots são de 10 minutos — os períodos devem ser múltiplos de 10 min. As pausas actualizam o dashboard automaticamente.</p>
+  <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap">
+    <div>
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Linha</label>
+      <select id="pausaLinha" style="padding:6px 10px;border:1px solid var(--bd);border-radius:3px;font-size:12px;background:var(--sf)">
+        <option value="0">Todas as linhas</option>
+        <option value="1">L1</option><option value="2">L2</option><option value="3">L3</option>
+        <option value="4">L4</option><option value="5">L5</option><option value="6">L6</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Início</label>
+      <input type="time" id="pausaStart" step="600" style="padding:6px 10px;border:1px solid var(--bd);border-radius:3px;font-size:12px;background:var(--sf)">
+    </div>
+    <div>
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Fim</label>
+      <input type="time" id="pausaEnd" step="600" style="padding:6px 10px;border:1px solid var(--bd);border-radius:3px;font-size:12px;background:var(--sf)">
+    </div>
+    <button onclick="addPausa()" style="background:var(--red);color:#fff;border:none;border-radius:3px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">+ Adicionar</button>
+  </div>
+  <div id="pausaList" style="margin-bottom:20px"></div>
+  <button onclick="resetPausas()" style="background:var(--sf2);border:1px solid var(--bd2);color:var(--tx2);border-radius:3px;padding:6px 14px;font-size:11px;cursor:pointer">Repor pausas padrão</button>
+</div>
+</div><!-- /app-pages -->
+<div id="tip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════
+//  PRODUCT DB
+// ═══════════════════════════════════════════════
+const STD_SKU = {
+  '18121':{pi:'1904004',ta:50,tp:50,pg:3},
+  '18125':{pi:'1901167',ta:50,tp:50,pg:3},
+  '18312':{pi:'1907601',ta:40,tp:40,pg:6},
+  '18347':{pi:'1907698',ta:50,tp:50,pg:3},
+  '18354':{pi:'1901169',ta:50,tp:50,pg:3},
+  '18357':{pi:'1907723',ta:40,tp:40,pg:6},
+  '18406':{pi:'1907698',ta:50,tp:50,pg:3},
+  '18421':{pi:'1901169',ta:55,tp:55,pg:4},
+  '18423':{pi:'1907723',ta:40,tp:40,pg:6},
+  '18429':{pi:'1901414',ta:40,tp:40,pg:6},
+  '18430':{pi:'1907601',ta:40,tp:40,pg:6},
+  '18764':{pi:'1904059',ta:55,tp:55,pg:4},
+  '22544':{pi:'1907134',ta:40,tp:40,pg:6},
+  '22545':{pi:'1907738',ta:40,tp:40,pg:6},
+  '22546':{pi:'1907760',ta:40,tp:40,pg:6},
+  '22788':{pi:'1901460',ta:40,tp:40,pg:6},
+  '24378':{pi:'1901678',ta:40,tp:40,pg:6},
+  '25456':{pi:'1901152',ta:55,tp:55,pg:4},
+  '26068':{pi:'1906009',ta:55,tp:55,pg:4},
+  '26069':{pi:'1906010',ta:55,tp:55,pg:4},
+  '27553':{pi:'1904004',ta:50,tp:50,pg:3},
+  '27566':{pi:'1907733',ta:40,tp:40,pg:6},
+  '27618':{pi:'1907726',ta:40,tp:40,pg:6},
+  '27894':{pi:'1905988',ta:40,tp:40,pg:6},
+  '28418':{pi:'1903048',ta:50,tp:50,pg:3},
+  '28660':{pi:'1902712',ta:40,tp:40,pg:6},
+  '28666':{pi:'1901169',ta:55,tp:55,pg:4},
+  '28667':{pi:'1901169',ta:50,tp:50,pg:3},
+  '28689':{pi:'1901460',ta:40,tp:40,pg:6},
+  '28690':{pi:'1907723',ta:40,tp:40,pg:6},
+  '29367':{pi:'1901152',ta:55,tp:55,pg:4},
+  '30215':{pi:'1903662',ta:40,tp:40,pg:6},
+  '30216':{pi:'1903661',ta:40,tp:40,pg:6},
+  '30791':{pi:'1904058',ta:55,tp:55,pg:4},
+  '32745':{pi:'1906009',ta:55,tp:55,pg:4},
+  '33351':{pi:'1905278',ta:55,tp:55,pg:4},
+  '33352':{pi:'1905278',ta:55,tp:55,pg:4},
+  '33359':{pi:'1904004',ta:50,tp:50,pg:3},
+  '33523':{pi:'1901152',ta:55,tp:55,pg:4},
+  '33619':{pi:'1901417',ta:40,tp:40,pg:6},
+  '33620':{pi:'1903661',ta:40,tp:40,pg:6},
+  '35690':{pi:'1905045',ta:40,tp:40,pg:6},
+  '35705':{pi:'1905045',ta:40,tp:40,pg:6},
+  '35931':{pi:'1905988',ta:40,tp:40,pg:6},
+  '35932':{pi:'1905045',ta:40,tp:40,pg:6},
+  '36161':{pi:'1904004',ta:50,tp:50,pg:3},
+  '36162':{pi:'1905278',ta:55,tp:55,pg:4},
+  '37045':{pi:'1907723',ta:40,tp:40,pg:6},
+  '37046':{pi:'1901460',ta:40,tp:40,pg:6},
+  '38095':{pi:'1902829',ta:55,tp:55,pg:4},
+  '39335':{pi:'1901167',ta:57,tp:57,pg:5},
+  '39336':{pi:'1904004',ta:55,tp:55,pg:4},
+  '39724':{pi:'1906010',ta:55,tp:55,pg:4},
+  '39931':{pi:'1906709',ta:35,tp:35,pg:1},
+  '39942':{pi:'1906709',ta:35,tp:35,pg:1},
+  '39943':{pi:'1906709',ta:35,tp:35,pg:1},
+  '40704':{pi:'1903048',ta:50,tp:50,pg:3},
+  '41420':{pi:'1907601',ta:40,tp:40,pg:6},
+  '41431':{pi:'1901414',ta:40,tp:40,pg:6},
+  '41680':{pi:'1904349',ta:55,tp:55,pg:4},
+  '41744':{pi:'1907457',ta:55,tp:55,pg:4},
+  '41751':{pi:'1907444',ta:50,tp:50,pg:3},
+  '41835':{pi:'1905643',ta:50,tp:50,pg:3},
+  '41836':{pi:'1904003',ta:50,tp:50,pg:3},
+  '41837':{pi:'1901169',ta:55,tp:55,pg:4},
+  '41838':{pi:'1907134',ta:40,tp:40,pg:6},
+  '41839':{pi:'1905643',ta:55,tp:55,pg:4},
+  '41843':{pi:'1905643',ta:50,tp:50,pg:3},
+  '41844':{pi:'1905643',ta:55,tp:55,pg:4},
+  '41845':{pi:'1907601',ta:40,tp:40,pg:6},
+  '41846':{pi:'1901414',ta:40,tp:40,pg:6},
+};
+
+// Consumos Kgs/hora por SKU e Linha (Kgshora_Planeamento_15052026.xlsx)
+const STD_LH = {
+  '18117':{ '5':147.24,'6':196.32 },
+  '18121':{ '2':419.8903,'5':383.376,'6':441.6757 },
+  '18122':{ '5':315.6142,'6':252.2281 },
+  '18124':{ '5':102.8378,'6':129.472 },
+  '18125':{ '2':412.104,'5':342.5058,'6':401.0509 },
+  '18312':{ '5':264.9352,'6':331.4556 },
+  '18347':{ '2':328.2034,'5':281.068,'6':325.8148 },
+  '18348':{ '5':270.48,'6':239.45 },
+  '18354':{ '2':200.3778,'3':210.924,'5':188.1,'6':192.9051 },
+  '18357':{ '2':198.774,'3':179.8825,'5':178.6284,'6':186.6513 },
+  '18384':{ '2':192.6624,'3':191.8274,'5':174.96,'6':206.8416 },
+  '18386':{ '2':330.6528,'3':206.5032,'5':164.6616,'6':165.5923 },
+  '18406':{ '2':365.6664,'5':414.0864,'6':401.9004 },
+  '18408':{ '5':347.328,'6':312.25 },
+  '18418':{ '2':154.1232,'3':213.3048 },
+  '18419':{ '2':281.6688,'5':210.3408,'6':210.3408 },
+  '18420':{ '2':123.552,'5':160.2037,'6':174.474 },
+  '18421':{ '2':160.3872,'3':120.4956 },
+  '18422':{ '5':169.225,'6':126.8478 },
+  '18423':{ '2':116.8723,'3':163.2321 },
+  '18429':{ '2':185.8731,'3':216.1198 },
+  '18430':{ '2':198.0634,'3':206.3636 },
+  '18764':{ '2':227.2875,'3':199.7094,'5':155.6676,'6':235.4832 },
+  '1907492':{ '5':29.0,'6':29.0 },
+  '22544':{ '2':182.292,'3':218.262 },
+  '22545':{ '2':113.8957,'3':212.6908 },
+  '22546':{ '2':108.1482,'3':158.0886 },
+  '22788':{ '2':162.4767,'3':170.205,'6':135.9855 },
+  '22789':{ '2':101.2944,'3':91.7633,'6':123.088 },
+  '22790':{ '2':134.1937,'3':133.5046 },
+  '24378':{ '2':211.123,'3':184.6984 },
+  '25456':{ '2':145.7568,'5':153.252,'6':149.2344 },
+  '25665':{ '5':181.569,'6':136.917 },
+  '26068':{ '3':281.9874,'5':264.8128,'6':261.268 },
+  '26069':{ '3':286.4005,'5':264.3284,'6':230.545 },
+  '27553':{ '5':365.4,'6':398.5773 },
+  '27566':{ '5':283.968,'6':354.398 },
+  '27618':{ '2':208.4209,'3':219.7745 },
+  '27894':{ '1':212.3334,'4':212.3334 },
+  '28418':{ '2':375.48,'5':419.7585,'6':120.792 },
+  '28666':{ '2':172.6704,'3':173.0808 },
+  '28667':{ '2':156.7397,'3':176.22,'5':102.9762,'6':154.5498 },
+  '28668':{ '5':171.3294,'6':223.326 },
+  '28689':{ '2':158.135,'3':144.0179,'6':142.7265 },
+  '28690':{ '2':143.1131,'3':145.0872 },
+  '29367':{ '5':175.284,'6':204.6025 },
+  '30215':{ '2':274.265,'3':239.22,'6':329.5912 },
+  '30216':{ '2':115.882,'3':277.7011,'6':212.2566 },
+  '30411':{ '2':335.2752,'3':369.414,'4':561.6 },
+  '30791':{ '2':256.3455,'3':166.6526,'5':205.4844,'6':208.2672 },
+  '30828':{ '2':133.632,'3':200.3877,'6':130.8528 },
+  '32745':{ '2':204.68,'3':224.8745,'5':233.006,'6':214.134 },
+  '33351':{ '1':476.7552,'4':623.376 },
+  '33352':{ '2':293.1984,'3':408.8724 },
+  '33359':{ '1':483.7536,'4':622.08 },
+  '33423':{ '2':295.5427,'3':301.3959 },
+  '33523':{ '2':164.1654,'5':159.3702,'6':144.3744 },
+  '33619':{ '5':278.208,'6':326.0725 },
+  '33620':{ '5':259.969,'6':188.298 },
+  '35427':{ '2':185.7214,'3':273.6363 },
+  '35428':{ '2':261.36,'3':217.5884 },
+  '35429':{ '2':198.5148,'3':230.4647 },
+  '35430':{ '2':297.2851,'5':199.5484,'6':217.6891 },
+  '35537':{ '2':106.4826,'3':169.7328 },
+  '35690':{ '1':157.5747,'4':157.5747 },
+  '35696':{ '1':152.5716,'4':152.5716 },
+  '35920':{ '1':150.4602,'4':132.759 },
+  '35931':{ '1':112.4091,'4':92.5722 },
+  '35932':{ '1':120.7629,'4':99.4518 },
+  '36161':{ '1':573.696,'4':628.3008 },
+  '36162':{ '1':532.656,'4':622.08 },
+  '36430':{ '2':67.5286,'3':179.712 },
+  '37041':{ '2':165.1455,'3':160.95 },
+  '37045':{ '2':218.8033,'3':208.3976 },
+  '37046':{ '2':190.0753,'3':222.9692 },
+  '37852':{ '5':491.085,'6':453.534 },
+  '38095':{ '1':321.2732,'4':276.6736 },
+  '39335':{ '2':389.7185,'3':434.4356 },
+  '39336':{ '2':265.5075,'3':315.9852 },
+  '39337':{ '2':319.0176,'3':307.6352 },
+  '39343':{ '2':162.7763,'3':187.218,'6':414.855 },
+  '39514':{ '1':96.4532,'4':96.4532 },
+  '39515':{ '1':91.8138,'4':91.8138 },
+  '39724':{ '3':250.0,'5':226.6215,'6':261.2328 },
+  '39856':{ '2':337.627,'3':290.9672 },
+  '39931':{ '1':140.7019,'4':140.7019 },
+  '39942':{ '1':147.0223,'4':129.7256 },
+  '40230':{ '5':236.7915,'6':198.3105 },
+  '40231':{ '5':254.4445,'6':271.7165 },
+  '40328':{ '1':117.4458,'4':131.9616 },
+  '40329':{ '2':231.66,'3':247.8103 },
+  '40515':{ '2':198.5148,'3':385.5357 },
+  '40702':{ '2':113.8957,'3':151.2918 },
+  '40704':{ '5':347.6988,'6':535.1701 },
+  '41213':{ '5':92.22,'6':89.9808 },
+  '41420':{ '2':216.04,'3':206.1756 },
+  '41431':{ '2':168.8376,'3':218.9216 },
+  '41680':{ '2':269.0064,'3':369.414,'4':491.4 },
+  '41744':{ '2':153.7,'3':201.6,'5':146.7635,'6':118.825 },
+  '41747':{ '5':190.08,'6':224.4 },
+  '41748':{ '2':237.8232,'5':204.6,'6':224.4 },
+  '41751':{ '2':181.9104,'3':188.9388 },
+  '41835':{ '2':227.2623,'5':210.3408,'6':210.3408 },
+  '41836':{ '2':177.696,'5':160.2037,'6':174.474 },
+  '41837':{ '2':183.2571,'3':160.95 },
+  '41838':{ '2':198.5148,'3':375.5394 },
+  '41839':{ '2':198.5148,'3':311.257 },
+  '41843':{ '2':259.0315,'5':199.5484,'6':217.6891 },
+  '41844':{ '2':181.9104,'3':210.366 },
+  '41845':{ '2':193.98,'3':263.2348,'5':174.96,'6':176.0292 },
+  '41846':{ '2':330.6528,'3':221.7705,'5':164.6616,'6':165.5923 },
+  '43048':{ '2':153.7,'3':201.6,'5':146.7635,'6':118.825 },
+};
+
+// Standards de Arrefecimento + Consumos por SKU (do Excel)
+const SKU_TABLE = [
+  {sku:18117,desc:"FIN CHOURIÇÃO GAS 2X(2X1KG) FS NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'5':147.2,'6':196.3}},
+  {sku:18121,desc:"FAT FIAMBR PA 3X350G 3XGAS FSR",pi:"1904004",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'2':419.9,'5':383.4,'6':441.7}},
+  {sku:18122,desc:"FAT CHOURIÇÃO 3X350G 3XGAS FSR",pi:"1901156",tipo:"N/A",nota:"N\u00e3o vai ao frio",no_cold:true,temp:null,tempo:0,lines:{'5':315.6,'6':252.2}},
+  {sku:18124,desc:"FAT PAIO YORK GAS 2X(2X1KG) FS NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'5':102.8,'6':129.5}},
+  {sku:18125,desc:"FAT FIAM P EX 3X350G 3XGAS FSR",pi:"1901167",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'2':412.1,'5':342.5,'6':401.1}},
+  {sku:18312,desc:"FAT PTO PERU FL 3X350G3XGAS CF",pi:"1907601",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'5':264.9,'6':331.5}},
+  {sku:18347,desc:"FAT FIAMBRE PA 21X200 GRS  AMH",pi:"1907698",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'2':328.2,'5':281.1,'6':325.8}},
+  {sku:18348,desc:"FAT CHOURICAO 14X200GRS    AMH",pi:"1901156",tipo:"N/A",nota:"N\u00e3o vai ao frio",no_cold:true,temp:null,tempo:0,lines:{'5':270.5,'6':239.4}},
+  {sku:18354,desc:"FAT ECON FIAMBRE 14X100G   NBR",pi:"1901169",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'2':200.4,'3':210.9,'5':188.1,'6':192.9}},
+  {sku:18357,desc:"FAT ECON PERU 12X90G CF",pi:"1907723",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':198.8,'3':179.9,'5':178.6,'6':186.7}},
+  {sku:18384,desc:"FAT FL PEITO PERU 10X120G CF",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':192.7,'3':191.8,'5':175.0,'6':206.8}},
+  {sku:18386,desc:"FAT FL PEITO FRANGO 10X120G CF",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':330.7,'3':206.5,'5':164.7,'6':165.6}},
+  {sku:18406,desc:"FAT FIAMBRE PÁ     21X200G PDC",pi:"1907698",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'2':365.7,'5':414.1,'6':401.9}},
+  {sku:18408,desc:"FAT CHOURIÇÃO      14X200G PDC",pi:"1901156",tipo:"N/A",nota:"N\u00e3o vai ao frio",no_cold:true,temp:null,tempo:0,lines:{'5':347.3,'6':312.2}},
+  {sku:18418,desc:"FIN FIAMBRE PER EXT 7X120G NBR",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':154.1,'3':213.3}},
+  {sku:18419,desc:"FAT FIAMBRE PER EX 10X120G NBR",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':281.7,'5':210.3,'6':210.3}},
+  {sku:18420,desc:"FAT FIAMBRE PÁ     10X120G NBR",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':123.6,'5':160.2,'6':174.5}},
+  {sku:18421,desc:"FIN ECON FIAMBRE  9X100G   NBR",pi:"1901169",tipo:"Finas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':160.4,'3':120.5}},
+  {sku:18422,desc:"FAT ECON CHOURIÇ 12X100G  NBR",pi:"1901164",tipo:"N/A",nota:"N\u00e3o vai ao frio",no_cold:true,temp:null,tempo:0,lines:{'5':169.2,'6':126.8}},
+  {sku:18423,desc:"FIN ECON PERU 10X90G CF",pi:"1907723",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':116.9,'3':163.2}},
+  {sku:18429,desc:"FIN FL PEITO FRANGO  8X120G CF",pi:"1901414",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':185.9,'3':216.1}},
+  {sku:18430,desc:"FIN FL PEITO PERU  8X120G CF",pi:"1907601",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':198.1,'3':206.4}},
+  {sku:18764,desc:"FAT MORTADELA ECO 12X120G NBR",pi:"1904059",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':227.3,'3':199.7,'5':155.7,'6':235.5}},
+  {sku:22544,desc:"FIN F PERNA EXT GAS 8X110G CDT NB",pi:"1907134",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':182.3,'3':218.3}},
+  {sku:22545,desc:"FIN PEITO PERU GAS 8X110G CDT NB",pi:"1907738",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':113.9,'3':212.7}},
+  {sku:22546,desc:"FIN P PERU BRASEADO GAS 8X110G CDT NB",pi:"1907760",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':108.1,'3':158.1}},
+  {sku:22788,desc:"FAT FIAMBRE FRANGO GAS  12X90G ECON CF",pi:"1901460",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':162.5,'3':170.2,'6':136.0}},
+  {sku:22789,desc:"FAT PEITO PERU GAS 10X140G CF",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':101.3,'3':91.8,'6':123.1}},
+  {sku:22790,desc:"FIN PEITO PERU GAS 8X140G CF",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':134.2,'3':133.5}},
+  {sku:24378,desc:"FIN PEITO FRANGO GAS 8X110G CDT NB",pi:"1901678",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':211.1,'3':184.7}},
+  {sku:25456,desc:"FAT PAIO YORK GAS 12X90G ECON NB",pi:"1901152",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':145.8,'5':153.3,'6':149.2}},
+  {sku:25665,desc:"FAT PAIO LOMBO GAS 10X100G NB",pi:"1902009",tipo:"N/A",nota:"N\u00e3o vai ao frio",no_cold:true,temp:null,tempo:0,lines:{'5':181.6,'6':136.9}},
+  {sku:26068,desc:"FAT MORTADELA PERU GAS 10X140G CF",pi:"1906009",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'3':282.0,'5':264.8,'6':261.3}},
+  {sku:26069,desc:"FAT MORTADELA PERU AZEIT. GAS 10X140G CF",pi:"1906010",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'3':286.4,'5':264.3,'6':230.5}},
+  {sku:27553,desc:"FAT FIAMBRE PA GAS 6X500G FS NB",pi:"1904004",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'5':365.4,'6':398.6}},
+  {sku:27566,desc:"FAT PEITO PERU GAS 6X500G FS NB",pi:"1907733",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'5':284.0,'6':354.4}},
+  {sku:27618,desc:"FIN PEITO PERU EXTRA GAS 8X110G NB",pi:"1907726",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':208.4,'3':219.8}},
+  {sku:27894,desc:"FAT VEG MEDITERRANEA 6X100G CF",pi:"1905988",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:40,lines:{'1':212.3,'4':212.3}},
+  {sku:28418,desc:"FAT Q F PERNA EXTRA GAS 3X(3X350G) FS NB",pi:"1903048",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'2':375.5,'5':419.8,'6':120.8}},
+  {sku:28660,desc:"FAT ERVAS MED GAS 8X100G NB VEGALIA (final)",pi:"1902712",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:40,lines:{}},
+  {sku:28666,desc:"FIN ECON S SELO FIAMBRE  9X100G NB",pi:"1901169",tipo:"Finas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':172.7,'3':173.1}},
+  {sku:28667,desc:"FAT ECON S SELO FIAMBRE 14X100G NB",pi:"1901169",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'2':156.7,'3':176.2,'5':103.0,'6':154.5}},
+  {sku:28668,desc:"FAT ECON S SELO CHOURIÇ 12X100G NB",pi:"1901164",tipo:"N/A",nota:"N\u00e3o vai ao frio",no_cold:true,temp:null,tempo:0,lines:{'5':171.3,'6':223.3}},
+  {sku:28689,desc:"FAT ECON S SELO FRANGO 12X90G CF",pi:"1901460",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':158.1,'3':144.0,'6':142.7}},
+  {sku:28690,desc:"FIN ECON S SELO PERU 10X90G CF",pi:"1907723",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':143.1,'3':145.1}},
+  {sku:29367,desc:"FAT PAIO YORK GAS 3X(3X250G) MASTERCHEF",pi:"1901152",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'5':175.3,'6':204.6}},
+  {sku:30215,desc:"FAT FIN PEITO FRANGO FL GAS 150G ALDI",pi:"1903662",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':274.3,'3':239.2,'6':329.6}},
+  {sku:30216,desc:"FAT FIN PEITO PERU FL GAS 150G ALDI",pi:"1903661",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':115.9,'3':277.7,'6':212.3}},
+  {sku:30411,desc:"FIN F PERNA EXTRA GAS 10X200G HAC",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':335.3,'3':369.4,'4':561.6}},
+  {sku:30791,desc:"FAT MORTAD. AZEIT GAS 12X120G ECON",pi:"1904058",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':256.3,'3':166.7,'5':205.5,'6':208.3}},
+  {sku:30828,desc:"FAT MORTAD. PERU GAS 12X120G ECON",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':133.6,'3':200.4,'6':130.9}},
+  {sku:32745,desc:"FAT MORTADELA PERU GAS 15X200G PORSI",pi:"1906009",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':204.7,'3':224.9,'5':233.0,'6':214.1}},
+  {sku:33351,desc:"FAT FIN FIAM P EXTRA GAS 21X200G SS CTE",pi:"1905278",tipo:"Finas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'1':476.8,'4':623.4}},
+  {sku:33352,desc:"FIN FIAMBRE P EXTRA GAS 10X200G SS CTE",pi:"1905278",tipo:"Finas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':293.2,'3':408.9}},
+  {sku:33359,desc:"FAT FIN FIAMBRE PÁ GAS 21X200G SS CTE",pi:"1904004",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'1':483.8,'4':622.1}},
+  {sku:33423,desc:"FIN FIAMBRE PERNA EXTRA GAS 10X180G DIA",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':295.5,'3':301.4}},
+  {sku:33523,desc:"FAT PAIO YORK S/SELO GAS 12X90G ECON NB",pi:"1901152",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':164.2,'5':159.4,'6':144.4}},
+  {sku:33619,desc:"FAT PEITO PERU GAS 6X500G MAKRO CHEF",pi:"1901417",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'5':278.2,'6':326.1}},
+  {sku:33620,desc:"FAT PEITO PERU FL GAS 6X500G MAKRO CHEF",pi:"1903661",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'5':260.0,'6':188.3}},
+  {sku:35427,desc:"FIN FL PEITO FRANGO GAS 5X220G CF",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':185.7,'3':273.6}},
+  {sku:35428,desc:"FIN FL PEITO PERU GAS 5X220G CF",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':261.4,'3':217.6}},
+  {sku:35429,desc:"FIN FIAM P EXT GAS 7X220G NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':198.5,'3':230.5}},
+  {sku:35430,desc:"FAT FIAM P EXT GAS 7X220G NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':297.3,'5':199.5,'6':217.7}},
+  {sku:35537,desc:"FIN PER EXT BRASEADO GAS 7X120G NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':106.5,'3':169.7}},
+  {sku:35690,desc:"FAT VERDURAS ASSAD GAS 6X100G CF VEGALIA",pi:"1905045",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:40,lines:{'1':157.6,'4':157.6}},
+  {sku:35696,desc:"FAT VEGETAIS HORTA GAS 6X100G CF VEGALIA",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'1':152.6,'4':152.6}},
+  {sku:35705,desc:"FAT VEG ASSADOS C/EHOLE GAS 8X100 NB VEG (final)",pi:"1905045",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:40,lines:{}},
+  {sku:35920,desc:"FAT LEGUMES GAS 8X100G NB VEGALIA",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'1':150.5,'4':132.8}},
+  {sku:35931,desc:"FAT ERVAS MED GAS 8X100G NB VEGALIA",pi:"1905988",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:40,lines:{'1':112.4,'4':92.6}},
+  {sku:35932,desc:"FAT VEG ASSADOS GAS 8X100 NB VEGALIA",pi:"1905045",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:40,lines:{'1':120.8,'4':99.5}},
+  {sku:36161,desc:"FAT FIAMBRE PÁ GAS MP 11X2X200G SS CTE",pi:"1904004",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'1':573.7,'4':628.3}},
+  {sku:36162,desc:"FAT FIAM P EXTRA GAS MP 11X2X200G SS CTE",pi:"1905278",tipo:"Finas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'1':532.7,'4':622.1}},
+  {sku:36430,desc:"FAT FIN PEITO FRANGO FL GAS 21X150G DIA",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':67.5,'3':179.7}},
+  {sku:37041,desc:"FIN FIAMBRE GAS 13X200G ECON NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':165.1,'3':161.0}},
+  {sku:37045,desc:"FIN FIAMBRE PERU GAS 8X140G ECON NB",pi:"1907723",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':218.8,'3':208.4}},
+  {sku:37046,desc:"FIN FIAMBRE FRANGO GAS 8X140G ECON NB",pi:"1901460",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':190.1,'3':223.0}},
+  {sku:37852,desc:"FAT GQ F PERNA EXTRA GAS 6X500G FS NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'5':491.1,'6':453.5}},
+  {sku:38095,desc:"CHOPPED PORK 95G 1E CJ*12",pi:"1902829",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'1':321.3,'4':276.7}},
+  {sku:39335,desc:"FIN FIAMBRE PERNA EXTRA GAS11X225G ALDI",pi:"1901167",tipo:"Finas",nota:"",no_cold:false,temp:-30,tempo:57,lines:{'2':389.7,'3':434.4}},
+  {sku:39336,desc:"FIN FIAMBRE PÁ GAS 11X225G ALDI",pi:"1904004",tipo:"Finas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':265.5,'3':316.0}},
+  {sku:39337,desc:"FIN FIAMBRE PERNA EXTRA GAS 6X150G DIA",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':319.0,'3':307.6}},
+  {sku:39343,desc:"FAT MORTAD PERU AZEIT GAS 12X150G DIA",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':162.8,'3':187.2,'6':414.9}},
+  {sku:39514,desc:"FAT OMELETE BACON&COGUMELOS 8X80G NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'1':96.5,'4':96.5}},
+  {sku:39515,desc:"FAT OMELETE FIAMBRE&QUEIJO 8X80G NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'1':91.8,'4':91.8}},
+  {sku:39724,desc:"FAT MORTAD PERU AZEIT GAS 15X200G PORSI",pi:"1906010",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'3':250.0,'5':226.6,'6':261.2}},
+  {sku:39856,desc:"FIN FIAMBRE PERNA EXTRA GAS 10X150G DIA",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':337.6,'3':291.0}},
+  {sku:39931,desc:"FIN VEG FRANGO GAS 8X90G CF VEG",pi:"1906709",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:35,lines:{'1':140.7,'4':140.7}},
+  {sku:39942,desc:"FIN VEG SABOR FRANGO 8X90G NB VEG",pi:"1906709",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:35,lines:{'1':147.0,'4':129.7}},
+  {sku:39943,desc:"FIN VEG SABOR FRANGO EH 8X90G NB VEG (final)",pi:"1906709",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:35,lines:{}},
+  {sku:40230,desc:"FIN CHOURIÇÃO GAS 6X500G FS NB",pi:"1901158",tipo:"N/A",nota:"N\u00e3o vai ao frio",no_cold:true,temp:null,tempo:0,lines:{'5':236.8,'6':198.3}},
+  {sku:40231,desc:"FAT PAIO YORK GAS 6X500G FS NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'5':254.4,'6':271.7}},
+  {sku:40328,desc:"FAT OMELETE FIAMB&QUEIJO 8X80G NB PROMO",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'1':117.4,'4':132.0}},
+  {sku:40329,desc:"FIN FIAM P EXT GAS 7X220G NB PROMO",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':231.7,'3':247.8}},
+  {sku:40515,desc:"FIN F PERNA EXT GAS 7X220G CDT NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':198.5,'3':385.5}},
+  {sku:40702,desc:"FIN PEITO PERU C/CENOURA 8X110G CDT NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':113.9,'3':151.3}},
+  {sku:40704,desc:"FAT GQ F PERNA EXTRA GAS 6X590G FS NBR",pi:"1903048",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'5':347.7,'6':535.2}},
+  {sku:41213,desc:"FAT BACON EXTRA GAS 12X120G NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'5':92.2,'6':90.0}},
+  {sku:41420,desc:"FIN FL PEITO PERU GAS 6X200G CF",pi:"1907601",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':216.0,'3':206.2}},
+  {sku:41431,desc:"FIN FL PEITO FRANGO GAS 6X200G CF",pi:"1901414",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':168.8,'3':218.9}},
+  {sku:41680,desc:"FIN F PERNA EXTRA GAS 12X200G HAC",pi:"1904349",tipo:"Finas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':269.0,'3':369.4,'4':491.4}},
+  {sku:41744,desc:"FAT SALCHICHA 12X100G NB",pi:"1907457",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':153.7,'3':201.6,'5':146.8,'6':118.8}},
+  {sku:41747,desc:"FAT CHOURICAO GAS 12X120G NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'5':190.1,'6':224.4}},
+  {sku:41748,desc:"FAT PAIO YORK GAS 12X120G NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':237.8,'5':204.6,'6':224.4}},
+  {sku:41751,desc:"FIN FL F PERNA EXTRA 8X120G CF",pi:"1907444",tipo:"Finas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'2':181.9,'3':188.9}},
+  {sku:41835,desc:"FAT F PERNA EXTRA GAS 11X120G NB",pi:"1905643",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'2':227.3,'5':210.3,'6':210.3}},
+  {sku:41836,desc:"FAT FIAMBRE PÁ GAS 11X120G NB",pi:"1904003",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'2':177.7,'5':160.2,'6':174.5}},
+  {sku:41837,desc:"FIN FIAMBRE GAS 7X200G ECON NB",pi:"1901169",tipo:"Finas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':183.3,'3':161.0}},
+  {sku:41838,desc:"FIN F PERNA EXTRA GAS 6X220G CDT NB",pi:"1907134",tipo:"Finas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':198.5,'3':375.5}},
+  {sku:41839,desc:"FIN F PERNA EXTRA GAS 6X220G NB",pi:"1905643",tipo:"Finas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':198.5,'3':311.3}},
+  {sku:41843,desc:"FAT F PERNA EXTRA GAS 8X220G NB",pi:"1905643",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-30,tempo:50,lines:{'2':259.0,'5':199.5,'6':217.7}},
+  {sku:41844,desc:"FIN F PERNA EXTRA GAS 8X120G NB",pi:"1905643",tipo:"Finas",nota:"",no_cold:false,temp:-30,tempo:55,lines:{'2':181.9,'3':210.4}},
+  {sku:41845,desc:"FAT PEITO PERU GAS 12X120G FL CF",pi:"1907601",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':194.0,'3':263.2,'5':175.0,'6':176.0}},
+  {sku:41846,desc:"FAT PEITO FRANGO GAS 12X120G FL CF",pi:"1901414",tipo:"Cl\u00e1ssicas",nota:"",no_cold:false,temp:-40,tempo:40,lines:{'2':330.7,'3':221.8,'5':164.7,'6':165.6}},
+  {sku:43048,desc:"FAT SALCHICHA C/SELO 12X100G NB",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'2':153.7,'3':201.6,'5':146.8,'6':118.8}},
+  {sku:1907492,desc:"CORTE JAMÓN CHIP (SLICING)",pi:"",tipo:"",nota:"",no_cold:false,temp:null,tempo:0,lines:{'5':29.0,'6':29.0}}
+];
+
+const DB={
+"1901149":{d:"SP3 BACON S/C P/FAT FSR",lt:25,ta:50,tp:50,pg:3,pw:9},
+"1901152":{d:"SP3 PAIO YORK P/FAT MP",lt:25,ta:55,tp:55,pg:4,pw:12.5},
+"1901156":{d:"SP3 CHOURIÇÃO P/FAT MP",lt:25,ta:50,tp:50,pg:3,pw:6.5,lh:{"5": 15.34, "6": 37.8}},
+"1901157":{d:"SP3 CHOURIÇÃO P/FAT NB",lt:25,ta:50,tp:50,pg:3,pw:6.5},
+"1901158":{d:"SP3 CHOURIÇÃO P/FAT FSR NB",lt:25,ta:50,tp:50,pg:3,pw:6.5},
+"1901164":{d:"SP3 CHOURIÇÃO P/FAT ECON",lt:25,ta:50,tp:50,pg:3,pw:8.0,lh:{"5": 11.61, "6": 11.39}},
+"1901167":{d:"SP1 FIAMB P EXT P/FAT MP",lt:25,ta:50,tp:50,pg:3,pw:18.0,lh:{"3": 17.09},tn:40},
+"1901169":{d:"SP1 FIAMB EXT SUC P/FAT",lt:25,ta:50,tp:50,pg:3,pw:12.0,lh:{"3": 13.41},tn:40},
+"1901414":{d:"SP3 PEITO FRANGO P/FAT FL CF",lt:25,ta:40,tp:40,pg:6,pw:9.2,lh:{"3": 25.56},tn:35},
+"1901417":{d:"SP1 PEITO PERU CLASSICAS P/ FAT",lt:25,ta:40,tp:40,pg:6,pw:9.0,tn:35},
+"1901419":{d:"SP1 PEITO PERU ECON P/FAT NB",lt:25,ta:40,tp:40,pg:6,pw:9.0,lh:{"3": 25.19}},
+"1901460":{d:"SP1 FIAMBRE FRANGO ECON P/FAT",lt:25,ta:40,tp:40,pg:6,pw:9.0,lh:{"3": 24.77},tn:35},
+"1901483":{d:"1901483",lt:25,ta:40,tp:40,pg:6,pw:9.2,lh:{"3": 21.81}},
+"1901678":{d:"SP1 PEITO FRANGO CDT P/FAT",lt:27,ta:40,tp:40,pg:6,pw:9.0,lh:{"3": 18.87},tn:40},
+"1902009":{d:"SP3 PAIO DO LOMBO P/FATIAR",lt:25,ta:50,tp:50,pg:3,pw:3.7},
+"1902079":{d:"SP3 MORTAD PERU C/ AZEIT P/FAT",lt:25,ta:55,tp:55,pg:4,pw:9.3,tn:35},
+"1902714":{d:"SP1 PEITO PERU EXTRA CLASSIC P/FATIAR",lt:25,ta:40,tp:40,pg:6,pw:12,lh:{"3": 17.07}},
+"1902829":{d:"CHOPPED PORK P/LONCHEAR D110 1500MM",lt:25,ta:55,tp:55,pg:4,pw:14},
+"1903048":{d:"SP1 FIAMB P EXT 11:11 P/FAT MP",lt:25,ta:50,tp:50,pg:3,pw:12,tn:35},
+"1903661":{d:"SP3 PEITO PERU P/ FAT FL MP",lt:25,ta:40,tp:40,pg:6,pw:9.2,lh:{"3": 24.44},tn:40},
+"1903662":{d:"SP3 PEITO FRANGO P/FAT FL MP",lt:25,ta:40,tp:40,pg:6,pw:9.2,lh:{"3": 19.53},tn:40},
+"1904002":{d:"SP1 FIAM PERN EXT P/FAT NB",lt:25,ta:50,tp:50,pg:3,pw:17.0,lh:{"3": 14.58}},
+"1904003":{d:"SP1 FIAMBRE PÁ P/FAT NB",lt:25,ta:50,tp:50,pg:5,pw:18.0,tn:40},
+"1904004":{d:"SP1 FIAMBRE PÁ P/FAT MP",lt:25,ta:50,tp:50,pg:3,pw:18.0,tn:35},
+"1904058":{d:"SP3 MORTAD C/AZEIT P/FAT ECON",lt:25,ta:55,tp:55,pg:4,pw:9.3,lh:{"3": 17.92},tn:35},
+"1904059":{d:"MORTADELA P/ FATIAR  ECO",lt:25,ta:55,tp:55,pg:4,pw:9.3,lh:{"3": 22.57},tn:35},
+"1904349":{d:"SP1 FIAMB P EXT P/FAT MERCADONA",lt:25,ta:55,tp:55,pg:4,pw:18.0,lh:{"3": 20.52, "4": 23.89},tn:35},
+"1904621":{d:"SP1 FIAMB PÁ 11:11 P/FAT MP",lt:25,ta:50,tp:50,pg:3,pw:12,tn:35},
+"1905045":{d:"SP3 VEGET CC VEGETAIS ASSADOS P/FAT",lt:25,ta:40,tp:40,pg:6,pw:5.7,tn:40},
+"1905050":{d:"SP3 VEGET CC LEGUMES P/FAT",lt:25,ta:40,tp:40,pg:6,pw:5.7,tn:40},
+"1905278":{d:"SP1 FIAMB P EXT P/FAT CTE",lt:25,ta:55,tp:55,pg:4,pw:18.0,tn:35},
+"1905408":{d:"1905408",lt:25,ta:50,tp:50,pg:3,pw:9},
+"1905643":{d:"SP1 FIAM PERN EXT P/FAT NB – BA",lt:25,ta:50,tp:50,pg:3,pw:17.0,lh:{"3": 12.37},tn:35},
+"1905988":{d:"SP3 VEGET MEDITERRANEA P/FAT (B)",lt:25,ta:40,tp:40,pg:6,pw:5.7,tn:40},
+"1906009":{d:"SP3 MORTAD PERU P/FAT (B)",lt:30,ta:55,tp:55,pg:6,pw:9.3,lh:{"3": 26.88}},
+"1906010":{d:"SP3 MORTAD PERU C/ AZEIT P/FAT (B)",lt:25,ta:55,tp:55,pg:4,pw:9.3,lh:{"3": 20.13}},
+"1906343":{d:"SP1 FIAMB P EXT P/FAT CTE (17KG)",lt:25,ta:55,tp:55,pg:4,pw:9},
+"1906346":{d:"SP1 FIAMB P EXT P/FAT CTE (17KG)",lt:25,ta:55,tp:55,pg:4,pw:17},
+"1906709":{d:"SP3 VEGETARIANO TIPO FRANGO P/FAT",lt:25,ta:35,tp:35,pg:1,pw:5.7},
+"1906944":{d:"SP3 PEITO PERU CEN P/FAT NB CDT",lt:25,ta:50,tp:50,pg:3,pw:8.6,lh:{"3": 17.59}},
+"1907134":{d:"SP1 FIAMB PERNA EXTRA P/FAT CDT NB - BA",lt:25,ta:40,tp:40,pg:6,pw:17.0,lh:{"3": 23.8}},
+"1907179":{d:"SP1 FIAM PERN EXT BRAS P/FAT NB BA",lt:25,ta:50,tp:50,pg:3,pw:9.4},
+"1907444":{d:"SP1 FIAMB P EXT FL P/FAT CF",lt:25,ta:50,tp:50,pg:3,pw:9.0,lh:{"3": 20.99}},
+"1907457":{d:"SP3 SALSICHA P/FAT NB",lt:25,ta:55,tp:55,pg:4,pw:9.2,lh:{"3": 21.91}},
+"1907588":{d:"SP1 FIAMBRE CORRENTE FS NB P/FAT",lt:25,ta:50,tp:50,pg:3,pw:18,tn:40},
+"1907601":{d:"SP3 PEITO PERU P/ FAT FL CF (C/FRG)",lt:25,ta:40,tp:40,pg:6,pw:9.2,lh:{"3": 30.43}},
+"1907698":{d:"SP1 FIAMB PÁ P/FAT PDC",lt:25,ta:50,tp:50,pg:3,pw:18},
+"1907723":{d:"SP1 FIAMBRE PERU ECON P/FAT NB",lt:25,ta:40,tp:40,pg:6,pw:9.0,lh:{"3": 16.12}},
+"1907726":{d:"SP1 PEITO PERU EXTRA CLASSI P/FAT (CFRG)",lt:25,ta:40,tp:40,pg:6,pw:9},
+"1907733":{d:"SP1 PEITO PERU CLASSICAS P/ FAT (CFRG)",lt:25,ta:40,tp:40,pg:6,pw:9},
+"1907738":{d:"SP3 PEITO PERU P/ FAT CDT NB (CFRG)",lt:25,ta:40,tp:40,pg:6,pw:9.2},
+"1907760":{d:"SP1 PEITO PERU BRASEADO CDT P/ FAT NB",lt:25,ta:40,tp:40,pg:6,pw:9.0,lh:{"3": 19.29}}
+};
+const PL={1:'P1-35m',2:'P2-40m',3:'P3-50m',4:'P4-55m',5:'P5-57m',6:'P6-40m'};
+const PC={1:'p1',2:'p2',3:'p3',4:'p4',5:'p5',6:'p6'};
+const SLOTS=144, LOW=6;
+const DEF_PAU=new Set([26,27,28,29,54,55,56,75,76,77,78,108,109,110,111,126,127,128,129]);
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let S={
+  plan:{1:[],2:[],3:[],4:[],5:[],6:[]},
+  pausas:{1:new Set(DEF_PAU),2:new Set(DEF_PAU),3:new Set(DEF_PAU),
+          4:new Set(DEF_PAU),5:new Set(DEF_PAU),6:new Set(DEF_PAU)},
+  curL:3
+};
+// Sem plano por defeito: o dashboard arranca VAZIO. As OPs só aparecem
+// depois de um plano diário ser carregado (Excel ou Supabase). Antes disso,
+// S.plan[l] = [] para todas as linhas.
+// (seed de demonstração removido — não representava um plano real)
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+// Lookup por SKU (código de produção) — fallback para PI
+const prBySku = sku => {
+  const s = STD_SKU[String(sku)];
+  if (!s) return null;
+  const base = DB[s.pi] || {lt:25,pw:10,lh:null};
+  // lhk = kgs/hora por linha (do ficheiro de consumos actualizado)
+  const lhk = STD_LH[String(sku)] || null;
+  return {lt:base.lt||25, ta:s.ta, tp:s.tp, pg:s.pg, pw:base.pw||10, lh:base.lh||null, lhk, d:base.d||'', tn:base.tn||null};
+};
+const pr = (pi, sku) => {
+  if (sku) { const r = prBySku(sku); if (r) return r; }
+  // PI lookup: check if any SKU maps to this PI and has lhk data
+  const base = DB[pi]||{lt:25,ta:40,tp:50,pg:3,pw:10};
+  // Try to find lhk from STD_LH using any SKU that maps to this PI
+  const matchSku = Object.entries(STD_SKU).find(([sk,v]) => v.pi===pi);
+  const lhk = matchSku ? (STD_LH[matchSku[0]] || null) : null;
+  return {...base, lhk, tn:base.tn||null};
+};
+// ── Effective cooling time ─────────────────────────────────────────────────
+// coolType: 'azoto' | 'mec' | undefined (→ default)
+// Default: Line 4 uses azoto if PI has tn, all others use mechanical (ta).
+function getEffectiveTa(q, l, coolType) {
+  if (coolType === 'azoto' && q.tn) return q.tn;
+  if (coolType === 'mec') return q.ta || q.tp || 40;
+  // Default by line
+  if (l === 4 && q.tn) return q.tn;
+  return q.ta || q.tp || 40;
+}
+function getArrSlots(q, l, coolType) {
+  return Math.max(1, Math.ceil(getEffectiveTa(q, l, coolType) / 10));
+}
+// Consumo planeado em logs por slot de 10min para linha l
+// Prioridade: lhk (kgs/h actualizado) > lh (logs/h legacy)
+const getCSpan = (q, l) => {
+  const pw = q.pw || 10;
+  // Try exact line match first
+  if (q.lhk && q.lhk[String(l)]) return (q.lhk[String(l)] / pw) / 6;
+  if (q.lh  && q.lh[String(l)])  return q.lh[String(l)] / 6;
+  // Fall back to average across all available lines
+  if (q.lhk) {
+    const vals = Object.values(q.lhk).filter(v => v > 0);
+    if (vals.length) return (vals.reduce((a,b)=>a+b,0)/vals.length / pw) / 6;
+  }
+  if (q.lh) {
+    const vals = Object.values(q.lh).filter(v => v > 0);
+    if (vals.length) return (vals.reduce((a,b)=>a+b,0)/vals.length) / 6;
+  }
+  return null;
+};
+
+const s2t  = s  => String(Math.floor(s/6)).padStart(2,'0')+':'+String((s%6)*10).padStart(2,'0');
+const t2s  = t  => { if(!t)return 0; const[h,m]=t.split(':').map(Number); return h*6+Math.floor(m/10); };
+const nowS = () => { const d=new Date(); return d.getHours()*6+Math.floor(d.getMinutes()/10); };
+const cLogs= o  => { const q=pr(o.pi,o.sku); return o.kgs&&q.pw?Math.ceil(o.kgs/q.pw):(o.logs||0); };
+const sumO = obj => Object.values(obj).reduce((a,b)=>a+(+b||0),0);
+const dsc  = (pi,sku) => { if(sku&&STD_SKU[sku]) return STD_SKU[sku].desc||(DB[pi]||{}).d||pi; return (DB[pi]||{}).d||pi; };
+const curSlot = () => { const v=document.getElementById('simTime').value; return v?t2s(v):nowS(); };
+const hasStarted = o => sumO(o.rows.e) > 0;
+const esc  = s  => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// ═══════════════════════════════════════════════
+//  DYNAMIC ORDER TIMING
+//
+//  effStart(0) = planStart sempre
+//  effStart(i) = max(planStart_i, effEnd(i-1))  — cascade para a frente E para trás
+//
+//  effEnd calculado com consumo REAL quando possível:
+//    - Se OP completa (logsRem=0): effEnd = último slot com entrega + 1
+//    - Se OP não arrancou (cur <= planStart): usa duração planeada desde effStart
+//    - Se OP em produção COM entregas: usa cS_real = entregas/slots_activos
+//      para projectar quando os logsRem restantes serão entregues
+//    - Se OP em produção SEM entregas: usa cS_planeado
+//    - Se sem cS (sem lh): usa duração proporcional
+// ═══════════════════════════════════════════════
+function buildOrderTimings(ords, l, pausas, cur) {
+  // ─────────────────────────────────────────────────────────────────────
+  //  TEMPOS DE CADA OP — INDEPENDENTES DO RELÓGIO (cur NÃO entra aqui)
+  //
+  //  A posição das barras/rutura vem do PONTO DE REPOSIÇÃO (consumo + stock),
+  //  nunca da hora actual. O relógio (cur) só PINTA a cor das barras
+  //  (cinzento=futuro, amarelo=agora, vermelho=já devia ter sido feito).
+  //  Antes usava-se `lineFree = cur + trabalho`, o que fazia o effStart — e
+  //  portanto a RUTURA — andar para a frente à medida que se avançava no
+  //  tempo (bug: rutura adiada 04:10→05:00→06:00 com uma só entrega).
+  //
+  //  Cascata sequencial FIXA (a linha é sequencial):
+  //    effStart(i) = max( planStart(i), effEnd(i-1) )   ← arranca no plano,
+  //                  ou quando a OP anterior acaba de ser consumida (se esta
+  //                  se prolongar para além do planStart da seguinte).
+  //    effEnd(i)   = effStart(i) + duração nominal (consumir tL a cSPlan,
+  //                  saltando pausas).
+  //  Tudo função do PLANO — não do relógio. Uma OP anterior que ocupe mais
+  //  tempo empurra a seguinte (ex.: OP1 acaba às 04:00 → OP2 arranca às 04:00
+  //  → 1ª barra de frio às 03:30), mas isso é um facto do plano, fixo, e não
+  //  muda só por se mexer no relógio.
+  // ─────────────────────────────────────────────────────────────────────
+  const timings = [];
+  let prevEnd = -1;   // fim previsto (slot) da OP anterior — cascata fixa
+
+  // slots para consumir n logs a partir de 'from', saltando pausas (sem cur)
+  const consumeSlots = (n, from, cS) => {
+    if (n <= 0) return 0;
+    if (cS <= 0) return Math.max(1, Math.ceil(n / 6));
+    let rem = n, s = from;
+    while (s < SLOTS && rem > 0) { if (!pausas.has(s)) rem -= cS; s++; }
+    return s - from;
+  };
+
+  ords.forEach((o, oi) => {
+    const q       = pr(o.pi, o.sku);
+    const cSPlan  = getCSpan(q, l) || 1;
+    const tL      = cLogs(o);
+    const ent     = sumO(o.rows.e);                 // logs ENTREGUES (consumidos) — real
+    const logsRemCascade = Math.max(0, tL - ent);          // para cascata (real)
+    const logsRem        = (o._manualDone || (o.ls && o.ls['__done__'])) ? 0 : logsRemCascade;  // para sinais
+    const planStart = o.startSlot || 0;
+
+    // ── arranque real: assim que a linha fica livre ─────────────────────
+    //  Se há OP anterior conhecida (prevEnd ≥ 0), a OP começa EXACTAMENTE
+    //  quando a anterior termina — sem esperar pelo planStart. Se a OP1 acaba
+    //  mais cedo, a OP2 arranca logo e as suas barras de frio ajustam-se.
+    //  Se a OP1 atrasa (prevEnd > planStart), o prevEnd já é maior e a OP2
+    //  atrasa igualmente. Só a 1ª OP do dia (prevEnd=-1) usa planStart.
+    const effStart = prevEnd >= 0 ? prevEnd : planStart;
+
+    // janela NOMINAL desta OP (usada pelo SEU modelo de stock/rutura) — fixa
+    const effEnd = Math.min(SLOTS - 1, Math.max(effStart + 1, effStart + consumeSlots(tL, effStart, cSPlan)));
+
+    // ── Fim para a CASCATA (quando a linha fica livre para a OP seguinte) ──
+    //  A linha termina quando consume todos os tL logs. O anchor é o ponto de
+    //  referência mais recente CONFIRMADO: última entrega registada OU última
+    //  chegada de frio confirmado (whichever is later). Desde esse ponto, ainda
+    //  faltam `logsRem` logs ao ritmo nominal.
+    //
+    //  ▸ lastDel  = última entrega (logs já consumidos pela linha)
+    //  ▸ lastCoolArr = última chegada de frio confirmado (ss + arrSlots)
+    //    → confirmar um lote TARDE (ex.: slot 132 quando planStart=18) empurra
+    //      a cascata mesmo sem entregas, evitando que a OP seguinte apareça
+    //      com sinais "atrasados" antes de a ordem anterior ter sequer começado.
+    //  ▸ Frio confirmado ANTES de effStart (pré-arrefecimento): lastCoolArr <
+    //      effStart → anchor = effStart (pré-cooling não muda o plano).
+    //  ▸ SEM confirmações nem entregas → anchor = effStart → nominal.
+    //  ▸ CUR-INDEPENDENTE: usa só dados confirmados + cS, nunca o relógio.
+    let lastDel = -1;
+    Object.entries(o.rows.e).forEach(([ss, v]) => { if ((+v || 0) > 0 && +ss > lastDel) lastDel = +ss; });
+    let lastCoolArr = -1;
+    Object.entries(o.ls).forEach(([ss, v]) => {
+      if (v.st === 'confirmed') { const a = +ss + getArrSlots(q, l, v._coolType); if (a > lastCoolArr) lastCoolArr = a; }
+    });
+    const anchor      = Math.max(effStart, lastDel, lastCoolArr);
+    const lineFreeEnd = Math.min(SLOTS - 1, anchor + consumeSlots(logsRemCascade, anchor, cSPlan));
+
+    const planDur = effEnd - effStart;
+    timings.push({ effStart, effEnd, planStart, planDur, logsRem, ent, tL,
+                   cS: cSPlan, cSReal: null, cSPlan, workBefore: 0, lineFreeEnd });
+
+    prevEnd = lineFreeEnd;   // a próxima OP só arranca quando esta fica livre (por entregas)
+  });
+  return timings;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  MODELO DE SINAIS DE REPOSIÇÃO
+//
+//  P.Rep = T.Arr × cS   (ponto de reposição em logs)
+//  T.Arr = ta da OP seguinte se ref diferente, senão da própria
+//  cS    = consumo médio planeado da OP em produção (logs/slot)
+//
+//  Sinal dispara no slot S quando:
+//    stockFuturo(S + aSlots) < P.Rep
+//
+//  stockFuturo(S + aSlots) = stockActual[S]
+//    - SUM(cS por slot activo em [S+1 .. S+aSlots])
+//    + SUM(lotes confirmados que chegam em [S+1 .. S+aSlots])
+//
+//  Uma OP só começa com a 1ª entrega à linha.
+//  Os sinais aparecem a partir de planStart - aSlots (antes do arranque).
+//  Após cada sinal, o lote prometido é adicionado ao stock futuro
+//  para que o próximo sinal não dispare antes de esse lote se esgotar.
+// ═══════════════════════════════════════════════════════════════════════
+function computeStockModel(o, l, pausas, cur, isFirstOrder, effStart, effEnd, nextOrd, cSFromTimings, planStart, armarioSlots, workBeforeSlots, prevStockResidual) {
+  // ─────────────────────────────────────────────────────────────────────
+  //  MODELO DE STOCK — recálculo total, independente do relógio (cur)
+  //
+  //  Lógica (gráfico do utilizador):
+  //   • cS = CONSUMO MÉDIO PLANEADO da OP (logs/slot) — nominal, NUNCA o real
+  //     instantâneo (uma amostra no arranque inflaciona tudo e parte a rutura).
+  //   • Rutura = 1º slot de consumo em que o stock CONFIRMADO chega a 0.
+  //   • Cada lote demora arrSlots a arrefecer → o sinal de frio é colocado
+  //     arrSlots ANTES da depleção, para o lote chegar exactamente quando o
+  //     stock acaba:  sinal = depleção − arrSlots.
+  //   • A POSIÇÃO de cada sinal é função pura dos dados (kgs, confirmados,
+  //     cS, effStart) — `cur` só ROTULA (planned/pending/missed). As barras
+  //     nunca desaparecem ao mover o relógio: só mudam de cor.
+  //   • Só os `confirmed` são factos reais. O resto é derivado e recalculado.
+  //  arrSlots = ceil(ta/10) — coerente com "Prod. Arref. por Entregar"/setas ↓.
+  // ─────────────────────────────────────────────────────────────────────
+  const q        = pr(o.pi, o.sku);
+  const pw       = q.pw || 10;
+  const lote     = Math.max(1, q.lt || 25);
+  const arrSlots = getArrSlots(q, l);   // default (uses line-based default cooling type)
+  const cS       = getCSpan(q, l) || (lote / arrSlots);     // NOMINAL
+  const loteDuration = Math.max(1, Math.ceil(lote / Math.max(0.01, cS)));
+  const logsNeeded   = Math.ceil((o.kgs || 0) / pw);
+
+  const store = (sm, rup) => {
+    o._sm = { cS, arrSlots, lead: arrSlots, effStart, effEnd, lote,
+              stockMap: sm, ruptureSlot: rup, logsNeeded, logsEnt: sumO(o.rows.e),
+              actualEffStart: (typeof actualEffStart !== 'undefined' ? actualEffStart : effStart) };
+  };
+  if (logsNeeded <= 0 || o._manualDone || o.ls['__done__']) {
+    // Preservar lotes CONFIRMADOS — só apagar sinais não confirmados
+    const keepLs = {};
+    if (o.ls) Object.entries(o.ls).forEach(([ss, v]) => {
+      if (ss === '__done__' || v.st === 'confirmed') keepLs[ss] = v;
+    });
+    // Garantir __done__ presente se _manualDone activo
+    if (o._manualDone && !keepLs['__done__']) keepLs['__done__'] = { done:true, ts: Date.now() };
+    o.ls = keepLs;
+    o._sm = { cS, arrSlots, lead: arrSlots, effStart, effEnd, lote,
+              stockMap: [], ruptureSlot: -1, logsNeeded, logsEnt: sumO(o.rows.e),
+              prevStockResidual: prevStockResidual || 0,
+              actualEffStart: effStart };
+    return;
+  }
+
+  const lastValidSigSlot = effEnd - arrSlots - 1;
+
+  // ── 1. Preservar APENAS confirmed ─────────────────────────────────────
+  const newLs = {};
+  Object.entries(o.ls).forEach(([ss, v]) => { if (v.st === 'confirmed') newLs[+ss] = { ...v }; });
+  const confirmedSlots = Object.keys(newLs).map(Number).sort((a, b) => a - b);
+  if (armarioSlots) confirmedSlots.forEach(ss => { for (let k = 0; k < arrSlots; k++) armarioSlots.add(ss + k); });
+
+  const simEnd = Math.min(SLOTS, effEnd + arrSlots + 2);
+  // Mapa de stock SEM floor: stock ARREFECIDO (chegadas) − consumo NOMINAL (cS).
+  //  As ENTREGAS (armário→linha) NÃO esvaziam a rutura: a linha fatia ao ritmo
+  //  nominal cS, por isso o que está arrefecido dura (logs arref. / cS) de
+  //  consumo. Entregar 25 logs não é consumi-los já — são fatiados ao longo do
+  //  tempo. A rutura é só OFERTA arrefecida vs PROCURA nominal.
+  // Entregas reais à linha por slot (rows.e) — reduzem o stock disponível
+  // imediatamente no slot em que são registadas, independentemente do consumo nominal.
+  // Quando há entregas reais, elas SUBSTITUEM o consumo nominal no mesmo slot
+  // (a entrega já está feita; não se subtrai cS em cima).
+  const entBySlot = new Array(simEnd).fill(0);
+  Object.entries(o.rows.e).forEach(([ss, v]) => {
+    const s = +ss;
+    if (s < simEnd && v > 0) entBySlot[s] += +v;
+  });
+  // Slot até ao qual já existem entregas reais registadas
+  const lastEntSlot = Object.keys(o.rows.e).reduce((m, ss) => (o.rows.e[+ss] > 0 ? Math.max(m, +ss) : m), -1);
+
+  // ── actualEffStart: arranque real da produção ────────────────────────
+  //  Se há um lote CONFIRMADO cujo frio chega ANTES de effStart (pré-arrefecimento
+  //  antecipado), a linha começa a consumir quando o primeiro lote fica pronto,
+  //  não em effStart. Caso contrário, arranca em effStart como antes.
+  //  Exemplo: confirmar a 01:50 (slot 11), arrSlots=4 → chega às 02:30 (slot 15).
+  //  Se effStart=18 (03:00), actualEffStart=15 → a depleção ocorre às 03:30 não às
+  //  04:00, e o 2º sinal aparece às 02:50 não às 03:20 — exactamente o que o
+  //  operador quer ao confirmar antes.
+  let firstCoolArrival = effStart;   // padrão: sem antecipação
+  confirmedSlots.forEach(ss => { const a = ss + getArrSlots(q, l, newLs[ss]._coolType); if (a < firstCoolArrival) firstCoolArrival = a; });
+  const actualEffStart = firstCoolArrival;   // = min(effStart, firstCoolArrival)
+
+  const buildRaw = (arr) => {
+    const sm = new Array(simEnd).fill(0);
+    // Stock inicial = residual arrefecido da OP anterior, injectado em actualEffStart.
+    let stk = 0;
+    for (let s = 0; s < simEnd; s++) {
+      if (s === actualEffStart) stk += (prevStockResidual || 0);
+      stk += arr[s] || 0;
+      // CONSUMO NOMINAL (cS) a partir de actualEffStart.
+      if (s >= actualEffStart && s < effEnd && !pausas.has(s)) stk -= cS;
+      sm[s] = stk;
+    }
+    return sm;
+  };
+
+  // ── 2. logs por arrefecer (missed NÃO conta — fica por arrefecer) ─────
+  const logsEnt = sumO(o.rows.e);
+  const totalConfirmed = confirmedSlots.reduce((s, ss) => s + (newLs[ss].actualLogs || newLs[ss].vl || lote), 0);
+  let logsRestantes = Math.max(0, logsNeeded - Math.max(totalConfirmed, logsEnt));
+
+  // ── 3. Rutura = depleção do stock CONFIRMADO ─────────────────────────
+  // entAt: entregas reais já registadas (rows.e). Quando entAt[s]>0, essa
+  // entrega substitui o consumo nominal cS no slot s — o stock ajusta-se ao
+  // que foi verdadeiramente consumido (avaria, perda de velocidade, etc.).
+  // Entre entregas, a previsão mantém o consumo nominal cS.
+  const entAt = new Array(simEnd).fill(0);
+  Object.entries(o.rows.e).forEach(([ss, v]) => {
+    const s = +ss; if (s < simEnd && +v > 0) entAt[s] += +v;
+  });
+
+  const arrC = new Array(simEnd).fill(0);
+  confirmedSlots.forEach(ss => { const a = ss + getArrSlots(q, l, newLs[ss]._coolType); if (a < simEnd) arrC[a] += (newLs[ss].actualLogs || newLs[ss].vl || lote); });
+  const smConfirmed = buildRaw(arrC);
+  let ruptureSlot = -1;
+  if (logsRestantes > 0) {
+    // Modelo com piso em 0 (floor) para calcular ruptureSlot:
+    // O modelo cumulativo (smConfirmed) acumula défice nos slots sem stock —
+    // quando cS×arrSlots > lote, o lote confirmado é absorvido pelo défice
+    // e smConfirmed fica sempre negativo (ex: cS=7.57, lote=25, arrSlots=6:
+    // smConfirmed[arr]= 25 − 6×7.57 = −20.4 ≤ 0 → rutura = effStart). Errado.
+    //
+    // Com piso em 0: stock não vai abaixo de 0 (linha para quando não há stock).
+    // Um lote de 25 logs que chega às 03:50 fornece 25 logs a partir daí,
+    // independentemente do défice teórico acumulado. Rutura real = quando
+    // ESSE stock chega a 0 (ex: 25/7.57 ≈ 3 slots → rutura às 04:20). ✓
+    //
+    // Algoritmo:
+    //  - fstk corre com piso em 0; hadPositive rastreia se já houve stock.
+    //  - Quando fstk=0 e !hadPositive: sem stock ainda — verificar se há
+    //    chegada confirmada (arrC[r]>0) no horizonte restante; se houver,
+    //    esperar; se não houver, é rutura imediata (= effStart, sem confirmados).
+    //  - Quando fstk=0 e hadPositive: stock acabou — verificar se há mais
+    //    chegadas; se houver, resetar hadPositive e continuar; se não, rutura.
+    const ruptureSearchFrom = Math.max(0, actualEffStart);
+    let fstk = prevStockResidual || 0;
+    let hadPositive = fstk > 0;
+    for (let s = ruptureSearchFrom; s < simEnd; s++) {
+      // Arrivals chegam mesmo durante pausas (o lote arrefece independentemente).
+      fstk += arrC[s] || 0;
+      // Consumo: entrega real substitui cS nominal; sem entrega → cS nominal.
+      if ((entAt[s] || 0) > 0) {
+        fstk -= entAt[s];               // stock ajusta ao que foi realmente entregue
+      } else if (s >= actualEffStart && s < effEnd && !pausas.has(s)) {
+        fstk -= cS;                     // previsão nominal (sem entrega registada)
+      }
+      if (fstk < 0) fstk = 0;           // piso: stock físico não fica negativo
+      // Durante pausa não há produção → não há rutura a reportar.
+      if (pausas.has(s)) { if (fstk > 0) hadPositive = true; continue; }
+
+      if (fstk > 0) {
+        hadPositive = true;
+      } else {
+        // Há mais chegadas confirmadas no horizonte restante?
+        let incoming = false;
+        for (let r = s + 1; r < simEnd; r++) {
+          if ((arrC[r] || 0) > 0) { incoming = true; break; }
+        }
+        if (!hadPositive && !incoming) { ruptureSlot = s; break; }   // sem stock nunca houve, e não vai haver
+        if (hadPositive && !incoming)  { ruptureSlot = s; break; }   // tinha stock, esgotou, não há mais
+        if (hadPositive &&  incoming)  { hadPositive = false; }       // esgotou mas há mais a caminho — resetar
+        // !hadPositive && incoming: ainda sem stock, mais chegadas a caminho — continuar
+      }
+    }
+    if (ruptureSlot < 0) ruptureSlot = Math.min(effEnd, simEnd - 1);
+  }
+  store(smConfirmed, ruptureSlot);
+
+  // earlySearchFrom: pesquisa de depleção para sinais começa em actualEffStart
+  // (pode ser antes de effStart se há pré-arrefecimento antecipado).
+  const earlySearchFrom = actualEffStart;
+
+  if (logsRestantes <= 0 || lastValidSigSlot < 0) { o.ls = newLs; return; }
+
+  // ── 4. Gerar sinais: sinal = depleção − arrSlots ──────────────────────
+  // sigStart: o mais cedo possível — permite sinais antes de effStart quando
+  // o residual da OP anterior é pequeno e esgota-se rapidamente.
+  const sigStart = Math.max(0, earlySearchFrom - arrSlots);
+  let minSlot = confirmedSlots.reduce((m, ss) => {
+    const cEntry  = newLs[ss];
+    const cActual = (cEntry && cEntry.actualLogs) || lote;
+    const cDur    = Math.max(1, Math.ceil(cActual / Math.max(0.01, cS)));
+    return Math.max(m, ss + cDur);
+  }, sigStart);
+  const arrP = arrC.slice();
+
+  // ── floorD: depleção real usando modelo de piso em 0 ────────────────
+  // Substitui buildRaw(arrP) + D-search cumulativo.
+  // Razão: o modelo cumulativo acumula défice nos slots sem stock — quando
+  //   cS×arrSlots > lote (ex: SKU 33352: 7.57×6=45.4 >> 25), smP fica sempre
+  //   negativo e D fica em effStart, pondo o sinal em overdue MESMO que haja
+  //   um lote confirmado a chegar mais tarde. O floor model encontra a depleção
+  //   REAL (ex: D=27=04:30) → sinal=D−arrSlots=03:30, sincronizado com ruptureSlot.
+  // Com isOverdue (ideal<cur) o comportamento mantém-se: D=effStart→ideal<cur→
+  //   sinal em cur (vermelho). Com lote confirmado antecipado, salta o buraco
+  //   pré-chegada e reporta a depleção genuína.
+  const floorD = (sf) => {
+    let fstk = 0, hadPos = false, psrDone = false;
+    // Pré-calcular stock do piso até sf (exclusive)
+    for (let s = 0; s < Math.min(sf, simEnd); s++) {
+      if (!psrDone && s === actualEffStart) { fstk += (prevStockResidual||0); psrDone=true; }
+      fstk += arrP[s] || 0;
+      if ((entAt[s] || 0) > 0) { fstk -= entAt[s]; }
+      else if (s >= actualEffStart && s < effEnd && !pausas.has(s)) { fstk -= cS; }
+      if (fstk < 0) fstk = 0;
+      if (fstk > 0) hadPos = true;
+    }
+    // Pesquisa a partir de sf
+    for (let s = sf; s <= lastValidSigSlot + arrSlots; s++) {
+      if (!psrDone && s === actualEffStart) { fstk += (prevStockResidual||0); psrDone=true; }
+      fstk += arrP[s] || 0;
+      if ((entAt[s] || 0) > 0) { fstk -= entAt[s]; }
+      else if (s >= actualEffStart && s < effEnd && !pausas.has(s)) { fstk -= cS; }
+      if (fstk < 0) fstk = 0;
+      if (fstk > 0) { hadPos = true; continue; }
+      // Durante pausa não há produção → fstk=0 numa pausa não é depleção real.
+      if (pausas.has(s)) continue;
+      // fstk=0 em slot de produção: buraco ou depleção real?
+      let inc = false;
+      for (let r = s+1; r <= lastValidSigSlot + arrSlots; r++) {
+        if ((arrP[r]||0) > 0) { inc = true; break; }
+      }
+      if (!hadPos && !inc) return s;   // nunca teve stock e não vem mais → rutura imediata
+      if ( hadPos && !inc) return s;   // tinha stock, esgotou, sem mais → rutura real
+      if ( hadPos &&  inc) { hadPos = false; continue; } // esgotou mas há mais a caminho → saltar buraco
+      // !hadPos && inc: à espera de 1ª chegada → continuar
+    }
+    return -1;
+  };
+
+  let searchFrom = Math.max(earlySearchFrom, minSlot);
+  let guard = 0;
+  while (logsRestantes > 0 && guard++ < 400) {
+    const qtd = Math.min(lote, logsRestantes);
+
+    const D = floorD(Math.max(earlySearchFrom, searchFrom));
+    let foundSlot = -1;
+    let isOverdue = false;
+    if (D >= 0) {
+      let ideal = Math.max(sigStart, D - arrSlots);   // ponto de reposição (do consumo real)
+      // ATRASADO: se o ponto de reposição já PASSOU e ainda não arrefeceste, não
+      //  se pede frio numa slot passada — o pedido salta para AGORA (cur), a
+      //  vermelho. (A rutura vem do stock CONFIRMADO e NÃO muda com isto; as
+      //  barras FUTURAS ficam no ponto de reposição, não andam com o relógio.)
+      if (ideal < cur) { ideal = cur; isOverdue = true; }
+
+      // Sinais PODEM cair em pausas — só o consumo é bloqueado.
+      // O operador pode colocar lotes a arrefecer durante uma pausa.
+      // Apenas newLs (slot já ocupado por outro sinal) bloqueia a colocação.
+      if (!newLs[ideal] && ideal < SLOTS) {
+        foundSlot = ideal;                                // slot ideal livre
+      } else if (isOverdue) {
+        let fwd = ideal;
+        while (fwd < SLOTS && newLs[fwd]) fwd++;
+        foundSlot = (fwd < SLOTS) ? fwd : -1;
+      } else {
+        const floor = Math.max(sigStart, cur);
+        let back = ideal;
+        while (back >= floor && newLs[back]) back--;
+        if (back >= floor) {
+          foundSlot = back;
+        } else {
+          let fwd = ideal;
+          while (fwd <= lastValidSigSlot && newLs[fwd]) fwd++;
+          foundSlot = (fwd <= lastValidSigSlot) ? fwd : -1;
+        }
+      }
+      // limite normal só quando NÃO atrasado (atrasado pode mostrar em cur)
+      if (!isOverdue && foundSlot > lastValidSigSlot) foundSlot = -1;
+    }
+    if (foundSlot < 0 && !isOverdue) {     // fallback: espaçar por loteDuration
+      for (let s = Math.max(sigStart, minSlot); s <= lastValidSigSlot; s++) {
+        if (!newLs[s]) { foundSlot = s; break; }  // pausas permitidas
+      }
+    }
+    if (foundSlot < 0) break;
+
+    // ── Cor do sinal ──────────────────────────────────────────────────
+    //  ATRASADO → VERMELHO em `cur` (já devia ter sido feito, faz-se agora).
+    //  Caso normal: VERMELHO se a slot já passou, AMARELO se é agora (dentro
+    //  do tempo de arrefecimento), CINZENTO se ainda é futuro.
+    const st = isOverdue ? 'missed'
+             : (foundSlot < cur ? 'missed'
+             : (foundSlot <= cur + arrSlots ? 'pending' : 'planned'));
+    newLs[foundSlot] = { st, vl: qtd };
+    if (armarioSlots) for (let k = 0; k < arrSlots; k++) armarioSlots.add(foundSlot + k);
+
+    const a = foundSlot + arrSlots;
+    if (a < simEnd) { arrP[a] += qtd; }  // floorD recalcula a partir de arrP (sem rebuild de smP)
+    logsRestantes -= qtd;
+    minSlot = Math.max(minSlot, foundSlot + loteDuration);
+    searchFrom = Math.max(searchFrom, a);
+  }
+  o.ls = newLs;
+}
+
+// ── Helper ─────────────────────────────────────────────────────────────
+function _applySignal(ls, sigSlot, winEnd, cur, lote, pausas) {
+  if (sigSlot > winEnd || sigSlot >= SLOTS || winEnd < 0) return;
+  winEnd = Math.min(winEnd, SLOTS-1);
+  if (cur < sigSlot) {
+    let ps = sigSlot;
+    while (ps < SLOTS && ps <= winEnd+2 && ls[ps]) ps++;
+    if (ps < SLOTS && !ls[ps]) ls[ps] = {st:'planned', vl:lote};
+  } else if (cur <= winEnd) {
+    for (let s=sigSlot; s<cur && s<=winEnd && s<SLOTS; s++)
+      if (!ls[s]) ls[s] = {st:'missed', vl:lote};
+    if (!ls[cur] && cur<=winEnd && cur<SLOTS)
+      ls[cur] = {st:'pending', vl:lote};
+  } else {
+    for (let s=sigSlot; s<=winEnd && s<SLOTS; s++)
+      if (!ls[s]) ls[s] = {st:'missed', vl:lote};
+  }
+}
+
+// ── _signalNextOrder ───────────────────────────────────────────────────
+function _signalNextOrder(currentOrd, nextOrd, nextT, l, pausas, cur) {
+  if (!nextOrd||!nextT) return;
+  const qN = pr(nextOrd.pi, nextOrd.sku);
+  const aN = Math.ceil((qN.ta||40)/10);
+  const lN = qN.lt||25;
+  const eN = nextT.effStart;
+  const pN = nextT.planStart!==undefined ? nextT.planStart : eN;
+  const sigN = Math.max(0, pN - aN);
+  const nLs = nextOrd.ls||{};
+  if (Object.values(nLs).some(v=>v.st==='confirmed')) return;
+  if (sigN>=SLOTS||sigN>=eN) return;
+  Object.keys(nLs).forEach(ss=>{ if(nLs[+ss].st==='planned') delete nLs[+ss]; });
+  _applySignal(nLs, sigN, eN-1, cur, lN, pausas);
+  nextOrd.ls = nLs;
+}
+
+// Helper functions used above
+function buildConsumoRealMap(ords) {
+  const map = {};
+  ords.forEach(o => {
+    const pw = (pr(o.pi,o.sku).pw)||10;
+    Object.entries(o.rows.e).forEach(([ss,v])=>{
+      const logs=Math.round((+v||0)/pw);
+      if(logs>0) map[+ss]=(map[+ss]||0)+logs;
+    });
+  });
+  return map;
+}
+
+function buildStockDispMap(o, ords, pausas, effStart) { return {}; }
+
+
+function buildStockTimeline(o, l, pausas, cur) {
+  // Usa o mesmo modelo de piso em 0 que o ruptureSlot (consumo nominal a cS/slot).
+  // Antes usava entregas reais (entAt) para deplecionar — causava discrepância:
+  // o operador não regista entregas a cada slot, por isso o armário mostrava
+  // stock alto (ex: 52 logs às 05:00) enquanto o ruptureSlot dizia 05:10.
+  // Com cS nominal, "Prod. Arref. por Entregar" cai a 0 exactamente no ruptureSlot,
+  // tornando os dois indicadores consistentes e intuitivos para o operador.
+  const q = pr(o.pi,o.sku);
+  const cSLocal   = getCSpan(q, l);
+  const effS      = o._sm ? o._sm.effStart : (o.startSlot || 0);
+  const effE      = o._sm ? o._sm.effEnd   : Math.min(SLOTS-1, effS + 120);
+
+  const arrAt = new Array(SLOTS).fill(0);
+
+  // Chegadas confirmadas (mesmo que no computeStockModel)
+  Object.entries(o.ls).forEach(([ss, v]) => {
+    if (v.st === 'confirmed') {
+      const fin = +ss + getArrSlots(q, l, v._coolType);
+      if (fin < SLOTS) arrAt[fin] += (v.actualLogs || v.vl || 0);
+    }
+  });
+
+  // Arrefecimentos manuais sem lote confirmado no mesmo slot
+  Object.entries(o.rows.a).forEach(([ss, kg]) => {
+    if (kg > 0 && !(o.ls[+ss] && o.ls[+ss].st === 'confirmed')) {
+      arrAt[+ss] += q.pw ? Math.floor(kg / q.pw) : 0;
+    }
+  });
+
+  // Modelo híbrido: entrega real substitui cS (para slots com entrega registada).
+  // → "Prod. Arref. por Entregar" reflecte o stock real (entregas passadas)
+  //   e a previsão nominal (cS) a partir do último slot com entrega.
+  const prevSR = o._sm ? (o._sm.prevStockResidual || 0) : 0;
+  const actualEffS = o._sm ? (o._sm.actualEffStart || effS) : effS;
+  // Entregas reais desta ordem
+  const bstEntAt = new Array(SLOTS).fill(0);
+  Object.entries(o.rows.e).forEach(([ss, v]) => {
+    const s = +ss; if (s < SLOTS && +v > 0) bstEntAt[s] += +v;
+  });
+  const stockLine = new Array(SLOTS).fill(null);
+  let fstk = prevSR;
+  let active = prevSR > 0;
+  for (let s = 0; s < SLOTS; s++) {
+    fstk += arrAt[s] || 0;
+    if ((bstEntAt[s] || 0) > 0) {
+      fstk -= bstEntAt[s];            // consumo real (entrega registada)
+    } else if (s >= actualEffS && s < effE && !pausas.has(s)) {
+      fstk -= cSLocal;               // consumo nominal (sem entrega)
+    }
+    if (fstk < 0) fstk = 0;
+    if ((arrAt[s] || 0) > 0 || (bstEntAt[s] || 0) > 0) active = true;
+    if (active) stockLine[s] = Math.round(fstk);
+  }
+  return stockLine;
+}
+
+// ═══════════════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════════════
+function tick() {
+  const d = new Date();
+  document.getElementById('nclk').textContent = d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('ndt').textContent  = d.toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+}
+setInterval(tick,1000); tick();
+
+// ═══════════════════════════════════════════════
+//  SIM TIME — preserve scroll position
+// ═══════════════════════════════════════════════
+function scrollToNow() {
+  const cur=curSlot();
+  const gs=document.getElementById('gscroll');
+  if(!gs)return;
+  // Fixed cols width ~437px + slot width 38px each
+  const fixedW=437;
+  const slotW=38;
+  const target=fixedW+cur*slotW - gs.clientWidth/2 + slotW/2;
+  gs.scrollTo({left:Math.max(0,target),behavior:'smooth'});
+}
+
+function onSimChange() {
+  const gs = document.getElementById('gscroll');
+  const scrollPos = gs ? gs.scrollLeft : 0;
+  renderDash();
+  if (gs) gs.scrollLeft = scrollPos;
+}
+
+// ═══════════════════════════════════════════════
+//  NAV
+// ═══════════════════════════════════════════════
+function goTo(id) {
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(x=>x.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const tabMap={'page-plan':'tab-plan','page-dash':'tab-dash','page-dados':'tab-dados','page-pausas':'tab-pausas'};
+  const tabId=tabMap[id];
+  if(tabId){const t=document.getElementById(tabId);if(t)t.classList.add('active');}
+  if(id==='page-dash') renderDash();
+  if(id==='page-dados') renderDados();
+  if(id==='page-pausas') renderPausas();
+  // Guardar página actual para restaurar ao recarregar
+  try { localStorage.setItem('nobre_curPage', id); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════
+//  EXCEL IMPORT — robusto, com preview e validação
+// ═══════════════════════════════════════════════
+function loadXL(i){if(i.files[0])loadXLF(i.files[0]);}
+
+// Helper: parse hora — suporta Date, HH:MM, HH:MM:SS, decimal de dia
+function parseHora(v){
+  if(v===null||v===undefined||v==='')return'00:00';
+  if(v instanceof Date){
+    // SheetJS parses Excel times as local-timezone Date objects
+    // Always use local hours/minutes (never UTC) to avoid timezone offset
+    return String(v.getHours()).padStart(2,'0')+':'+String(v.getMinutes()).padStart(2,'0');
+  }
+  const s=String(v).trim();
+  // HH:MM string
+  const tm=s.match(/^(\d{1,2}):(\d{2})/);
+  if(tm)return tm[1].padStart(2,'0')+':'+tm[2];
+  const n=parseFloat(s);
+  // Excel fractional day (0..1): multiply by 1440 minutes
+  if(!isNaN(n)&&n>0&&n<=1){
+    const tot=Math.round(n*1440);
+    return String(Math.floor(tot/60)).padStart(2,'0')+':'+String(tot%60).padStart(2,'0');
+  }
+  // Integer minutes (ex: 180 = 03:00)
+  if(!isNaN(n)&&n>1&&n<1440){
+    return String(Math.floor(n/60)).padStart(2,'0')+':'+String(Math.round(n%60)).padStart(2,'0');
+  }
+  return'00:00';
+}
+
+function loadXLF(file){
+  // Feedback visual na zona de upload
+  const upz=document.getElementById('upz');
+  upz.innerHTML='<div style="font-size:22px">⏳</div><strong>A processar...</strong>';
+  upz.style.pointerEvents='none';
+
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
+
+      // Tentar todas as sheets — usar a primeira com LINHA e PI no cabeçalho
+      let ws=null, sheetName='';
+      for(const sn of wb.SheetNames){
+        const candidate=wb.Sheets[sn];
+        const testRows=XLSX.utils.sheet_to_json(candidate,{header:1,defval:''});
+        for(let ti=0;ti<Math.min(20,testRows.length);ti++){
+          const row=testRows[ti].map(c=>String(c).toUpperCase().trim());
+          if(row.some(c=>c==='LINHA'||c.includes('LINHA'))&&row.some(c=>c==='PI'||c.startsWith('PI'))){
+            ws=candidate; sheetName=sn; break;
+          }
+        }
+        if(ws)break;
+      }
+      if(!ws){
+        resetUpz();
+        showImportError('Formato não reconhecido.<br>Não encontrei nenhuma folha com colunas <b>LINHA</b> e <b>PI</b>.<br><small>Sheets disponíveis: '+wb.SheetNames.join(', ')+'</small>');
+        return;
+      }
+
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',cellDates:true});
+
+      // Encontrar linha de cabeçalho
+      let hRow=-1;
+      for(let i=0;i<Math.min(25,rows.length);i++){
+        const r2=rows[i].map(c=>String(c).toUpperCase().trim());
+        if(r2.some(c=>c==='LINHA'||c.includes('LINHA'))&&r2.some(c=>c==='PI'||c.startsWith('PI'))){
+          hRow=i;break;
+        }
+      }
+      if(hRow<0){resetUpz();showImportError('Cabeçalho não encontrado na sheet <b>'+sheetName+'</b>.');return;}
+
+      const h=rows[hRow].map(c=>String(c).toUpperCase().trim());
+
+      // ── Mapeamento flexível de colunas ──
+      const ci=(...names)=>{
+        for(const n of names){
+          const idx=h.findIndex(c=>c===n||c.includes(n));
+          if(idx!==-1)return idx;
+        }
+        return -1;
+      };
+      const iL   = ci('LINHA');
+      const iCOD = ci('CÓDIGO','CODIGO','COD');          // SKU / código de produção
+      const iPI  = ci('PI');
+      const iOP  = ci('OP','ORDEM DE PROD','ORDEM','NR OP');
+      const iK   = ci('KG ENTRADA','KG ENT','KG ENTRAD','KGS','KG');
+      // Hora: pode ser coluna "HORAS" (decimal do dia) ou "HORA INICIO"
+      const iHExact=h.findIndex(c=>c==='HORAS');let iH=iHExact!==-1?iHExact:ci('HORA INICIO','HORA INI','HORA');if(iH===-1)iH=19;
+
+      // Mapa romano → número (formato real do plano: I, II, III, IV, V, VI)
+      const ROMAN={'I':1,'II':2,'III':3,'IV':4,'V':5,'VI':6};
+
+      const newPlan={1:[],2:[],3:[],4:[],5:[],6:[]};
+      const warnings=[];
+      let loaded=0, skipped=0;
+      let lastL=null; // herdar linha de linhas anteriores
+
+      for(let i=hRow+1;i<rows.length;i++){
+        const rr=rows[i];
+        if(!rr||rr.every(c=>String(c).trim()===''))continue;
+
+        // Linha — aceita romano, árabe, ou herda da última linha válida
+        const linhaRaw=String(rr[iL]||'').trim().toUpperCase().replace(/[^IVX\d]/g,'');
+        let l=ROMAN[linhaRaw]||null;
+        if(!l){const m=linhaRaw.match(/^(\d+)$/);if(m)l=+m[1];}
+        if(l&&[1,2,3,4,5,6].includes(l)) lastL=l;
+        const linha=l||lastL;
+        if(!linha){skipped++;continue;}
+
+        // PI — obrigatório
+        const codChk=iCOD!==-1?String(rr[iCOD]||'').trim():'';
+        if(!codChk||codChk.startsWith('#')){skipped++;continue;}
+        const pi=String(rr[iPI]||'').trim().replace(/\s+/g,'');
+        if(!pi||pi.startsWith('#')||!/^\d{7}$/.test(pi)){skipped++;continue;}
+
+        // SKU — coluna CÓDIGO (código de produção)
+        const skuRaw=iCOD!==-1?String(rr[iCOD]||'').trim():'';
+        const sku=skuRaw&&!/^#/.test(skuRaw)?skuRaw:'';
+
+        // KGs — coluna Kg Entrada
+        const kgsRaw=iK!==-1?rr[iK]:'';
+        const kgs=+(String(kgsRaw).replace(',','.'))||0;
+        if(!kgs){skipped++;continue;}  // ignorar linhas sem KGs (linhas vazias do plano)
+
+        // Hora — decimal do dia (0.125 = 03:00) ou HH:MM
+        const hora=parseHora(iH!==-1?rr[iH]:'');
+
+        // OP
+        const ordem=iOP!==-1?String(rr[iOP]||'').trim():'';
+
+        // Validar PI
+        if(!DB[pi]&&!STD_SKU[sku]){
+          warnings.push('L'+linha+' SKU <b>'+sku+'</b> PI <b>'+pi+'</b> não encontrado na base de dados');
+        }
+
+        newPlan[linha].push({pi,sku,ordem,kgs,hora,startSlot:t2s(hora),rows:{d:{},a:{},e:{}},ls:{}});
+        loaded++;
+      }
+
+      if(loaded===0){
+        resetUpz();
+        showImportError('Nenhuma ordem válida encontrada.<br>Verifica se as colunas <b>LINHA</b> e <b>PI</b> têm dados.');
+        return;
+      }
+
+      // Extrair data do plano — col J (~linha 6) ou nome do ficheiro
+      let planDate = null;
+      // 1ª fonte: col J nas primeiras 10 linhas
+      for(let di=0;di<Math.min(10,rows.length);di++){
+        const cellJ = rows[di][9]; // col J = index 9
+        if(cellJ instanceof Date && !isNaN(cellJ)){
+          planDate = cellJ; break;
+        }
+        if(typeof cellJ === 'string'){
+          const m = cellJ.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+          if(m){ try{ planDate = new Date(+m[3]<100?2000+(+m[3]):+m[3],+m[2]-1,+m[1]); break; }catch(e){} }
+        }
+      }
+      // 2ª fonte: nome do ficheiro (ex: plano_Diario_01_04_2026.xlsx)
+      if(!planDate){
+        const fm = file.name.match(/(\d{2})[_\-](\d{2})[_\-](\d{4})/);
+        if(fm) try{ planDate = new Date(+fm[3],+fm[2]-1,+fm[1]); }catch(e){}
+      }
+      if(planDate){
+        const ds = planDate.toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+        const hdr = document.getElementById('planDateHdr');
+        if(hdr){ hdr.style.display=''; }
+        const dv = document.getElementById('planDateVal');
+        if(dv) dv.textContent = ds.charAt(0).toUpperCase()+ds.slice(1);
+        const df2 = document.getElementById('planDateFile');
+        if(df2) df2.textContent = '('+file.name+')';
+      }
+
+      // Mostrar modal de preview antes de confirmar
+      showImportPreview(newPlan, loaded, skipped, warnings, sheetName, file.name);
+
+    }catch(err){
+      resetUpz();
+      showImportError('Erro ao processar o ficheiro:<br><code>'+err.message+'</code>');
+      console.error(err);
+    }
+  };
+  r.readAsBinaryString(file);
+}
+
+function resetUpz(){
+  const upz=document.getElementById('upz');
+  upz.style.pointerEvents='';
+  upz.innerHTML='<div style="font-size:28px">📊</div><strong>Arrasta ou clica para carregar o Excel de planeamento</strong><p>Colunas esperadas: Linha, Ordem, PI, Hora Inicio, KGs</p>';
+}
+
+function showImportError(msg){
+  const d=document.createElement('div');
+  d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;';
+  d.innerHTML='<div style="background:#fff;border-radius:6px;padding:28px 32px;max-width:460px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.25);">'
+    +'<div style="font-size:28px;margin-bottom:10px">⚠️</div>'
+    +'<div style="font-family:Barlow Condensed,sans-serif;font-size:16px;font-weight:700;color:#B64926;margin-bottom:10px">Erro ao importar</div>'
+    +'<div style="font-size:12px;color:#333;line-height:1.6;margin-bottom:18px">'+msg+'</div>'
+    +'<button onclick="this.closest(\'div[style]\').remove()" style="background:#B64926;color:#fff;border:none;border-radius:3px;padding:7px 20px;font-size:12px;font-weight:600;cursor:pointer">Fechar</button>'
+    +'</div>';
+  document.body.appendChild(d);
+}
+
+function showImportPreview(newPlan, loaded, skipped, warnings, sheetName, fileName){
+  const totals=[1,2,3,4,5,6].map(l=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--sf2);border:1px solid var(--bd);border-radius:2px;font-size:11px;font-weight:700"><span style="color:var(--red)">L${l}</span><span style="color:var(--mu)">${newPlan[l].length}</span></span>`).join('');
+
+  const warnHtml=warnings.length
+    ?'<div style="background:#FFF8E8;border:1px solid #E8C840;border-radius:3px;padding:10px 12px;margin-bottom:14px;font-size:11px;line-height:1.8;max-height:120px;overflow-y:auto">'
+      +'<strong style="color:#7A5000">⚠ '+warnings.length+' aviso(s):</strong><br>'+warnings.join('<br>')+'</div>'
+    :'';
+
+  const d=document.createElement('div');
+  d.id='importModal';
+  d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:flex;align-items:center;justify-content:center;';
+  d.innerHTML=`<div style="background:#fff;border-radius:6px;padding:0;max-width:520px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.3);overflow:hidden;">
+    <div style="background:var(--red);padding:14px 20px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px">📥</span>
+      <div>
+        <div style="font-family:Barlow Condensed,sans-serif;font-size:16px;font-weight:800;color:#fff;letter-spacing:.5px">Confirmar Importação</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.7)">${fileName} — Sheet: ${sheetName}</div>
+      </div>
+    </div>
+    <div style="padding:20px 24px;">
+      <div style="display:flex;gap:16px;margin-bottom:16px;">
+        <div style="flex:1;background:#D4F0E0;border:1px solid #2A8A50;border-radius:3px;padding:10px;text-align:center;">
+          <div style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:800;color:#1A6030">${loaded}</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#2A8A50;letter-spacing:.5px">Ordens importadas</div>
+        </div>
+        ${skipped>0?`<div style="flex:1;background:#FFF5CC;border:1px solid #C8A800;border-radius:3px;padding:10px;text-align:center;">
+          <div style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:800;color:#7A5000">${skipped}</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#AA8000;letter-spacing:.5px">Linhas ignoradas</div>
+        </div>`:''}
+      </div>
+      <div style="margin-bottom:12px;display:flex;gap:5px;flex-wrap:wrap;">${totals}</div>
+      ${warnHtml}
+      <div style="background:#FFF3F0;border:1px solid #E8C0B0;border-radius:3px;padding:8px 12px;font-size:11px;color:#7A3020;margin-bottom:18px;">
+        ⚠ Esta ação irá <strong>substituir o plano atual</strong>. Os dados de consumos já introduzidos serão perdidos.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="document.getElementById('importModal').remove();resetUpz()" style="background:var(--sf2);border:1px solid var(--bd2);color:var(--tx2);border-radius:3px;padding:7px 18px;font-size:12px;font-weight:600;cursor:pointer;">Cancelar</button>
+        <button onclick="confirmImport()" style="background:var(--red);color:#fff;border:none;border-radius:3px;padding:7px 22px;font-size:12px;font-weight:600;cursor:pointer;">✓ Importar Plano</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(d);
+
+  // Guardar newPlan no modal para usar no confirm
+  d._newPlan=newPlan;
+}
+
+function confirmImport(){
+  const modal=document.getElementById('importModal');
+  if(!modal)return;
+  const newPlan=modal._newPlan;
+  modal.remove();
+  [1,2,3,4,5,6].forEach(l=>S.plan[l]=newPlan[l]);
+  // Repor pausas padrão ao carregar novo plano
+  [1,2,3,4,5,6].forEach(l=>S.pausas[l]=new Set(DEF_PAU));
+  savePausasToSupabase();
+  document.getElementById('upz').style.display='none';
+  renderPlan();
+  renderDash();
+  // Save to Supabase
+  savePlanToSupabase().then(()=>{
+    const flash=document.createElement('div');
+    flash.style.cssText='position:fixed;top:60px;right:20px;background:#2A8A50;color:#fff;border-radius:4px;padding:10px 18px;font-size:12px;font-weight:600;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:opacity .4s';
+    flash.textContent='✓ Plano importado e guardado na base de dados';
+    document.body.appendChild(flash);
+    setTimeout(()=>{flash.style.opacity='0';setTimeout(()=>flash.remove(),400);},3000);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  PAGE 1: PLANEAMENTO
+// ═══════════════════════════════════════════════
+let dragL=null,dragI=null;
+function prodOpts(sel){
+  return '<option value="">-- PI --</option>'+
+    Object.entries(DB).map(([pi,q])=>'<option value="'+pi+'"'+(pi===sel?' selected':'')+'>'+pi+' - '+q.d+'</option>').join('');
+}
+function renderPlan(){
+  let html='';
+  [1,2,3,4,5,6].forEach(l=>{
+    const ords=S.plan[l];
+    html+='<div class="plw"><div class="plttl"><b>Linha '+l+'</b><span style="font-size:10px;color:var(--mu);font-weight:400">'+ords.length+(ords.length!==1?' ordens':' ordem')+'</div>';
+    html+='<div class="plhdr"><div></div><div>Ordem</div><div>PI</div><div>Descricao</div><div>Hora</div><div>KGs Plan.</div><div>Logs Nec.</div><div>Logs Ent.</div><div>Prog.</div><div>Arrec.</div><div></div></div>';
+    ords.forEach((o,i)=>{
+      const q=pr(o.pi,o.sku),logs=cLogs(o);
+      html+='<div class="plrow" draggable="true"'+
+        ' ondragstart="dragL='+l+';dragI='+i+';this.classList.add(\'dragging\')"'+
+        ' ondragend="this.classList.remove(\'dragging\');document.querySelectorAll(\'.plrow\').forEach(r=>r.classList.remove(\'drag-over\'))"'+
+        ' ondragover="event.preventDefault();document.querySelectorAll(\'.plrow\').forEach(r=>r.classList.remove(\'drag-over\'));this.classList.add(\'drag-over\')"'+
+        ' ondrop="event.preventDefault();this.classList.remove(\'drag-over\');dropRow('+l+','+i+')">';
+      html+='<div class="plc dh">&#x2807;</div>';
+      html+='<div class="plc"><input class="plinp" value="'+esc(o.ordem||'')+'" placeholder="Ordem" onchange="S.plan['+l+']['+i+'].ordem=this.value"></div>';
+      html+='<div class="plc"><select class="plsel" onchange="onPI('+l+','+i+',this.value)">'+prodOpts(o.pi)+'</select></div>';
+      html+='<div class="plc" style="font-size:11px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(dsc(o.pi,o.sku))+'">'+esc(dsc(o.pi,o.sku)||'--')+'</div>';
+      html+='<div class="plc"><input class="plinp" type="time" value="'+(o.hora||'06:00')+'" onchange="S.plan['+l+']['+i+'].hora=this.value;S.plan['+l+']['+i+'].startSlot=t2s(this.value)"></div>';
+      html+='<div class="plc"><input class="plinp" type="number" min="0" value="'+(o.kgs||'')+'" placeholder="KGs" onchange="S.plan['+l+']['+i+'].kgs=+this.value;renderPlan()"></div>';
+      const logsEnt = sumO(o.rows.e);
+      const logsNec = Math.ceil((o.kgs||0)/(q.pw||10));
+      const logsPct = logsNec>0 ? Math.min(100,Math.round(logsEnt/logsNec*100)) : 0;
+      const logsColor = logsEnt>=logsNec&&logsNec>0 ? 'var(--sg-b)' : logsEnt>0 ? 'var(--gld)' : 'var(--red)';
+      html+='<div class="plc" style="text-align:center;font-weight:700;color:var(--red)">'+(logsNec||'--')+'</div>';
+      html+='<div class="plc" style="text-align:center;font-weight:700;color:'+logsColor+'">'+(logsEnt>0?logsEnt+'/'+logsNec:'--')+'</div>';
+      html+='<div class="plc"><span class="ptag '+(PC[q.pg]||'p3')+'">'+(PL[q.pg]||'--')+'</span></div>';
+      html+='<div class="plc" style="text-align:center;color:var(--mu)">'+(q.ta||'--')+'min</div>';
+      html+='<div class="plc"><button class="btndel" onclick="S.plan['+l+'].splice('+i+',1);renderPlan()">x</button></div>';
+      html+='</div>';
+    });
+    html+='<button class="btnadd" onclick="addRow('+l+')">+ Adicionar ordem a Linha '+l+'</button></div>';
+  });
+  document.getElementById('planC').innerHTML=html;
+}
+function dropRow(toL,toI){
+  if(dragL===null||dragI===null||dragL!==toL){dragL=null;dragI=null;return;}
+  const arr=S.plan[dragL],item=arr.splice(dragI,1)[0];
+  arr.splice(dragI<toI?toI-1:toI,0,item);
+  dragL=null;dragI=null;renderPlan();
+}
+function onPI(l,i,pi){S.plan[l][i].pi=pi;renderPlan();}
+function addRow(l){S.plan[l].push({pi:'',sku:'',ordem:'',kgs:0,hora:'06:00',startSlot:36,rows:{d:{},a:{},e:{}},ls:{}});renderPlan();}
+
+// ═══════════════════════════════════════════════
+//  PAGE 2: DASHBOARD
+// ═══════════════════════════════════════════════
+function selL(l){
+  S.curL=l;
+  document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active'));
+  const tab=document.getElementById('ltab-'+l);
+  if(tab) tab.classList.add('active');
+  const nOrds=S.plan[l].length;
+  document.getElementById('dttl').textContent='Linha '+l;
+  const badge=document.getElementById('dttl-badge');
+  if(badge) badge.textContent=nOrds+' ordem'+(nOrds!==1?'s':'');
+  renderDash();
+}
+
+function renderDash(){
+  const l=S.curL, ords=S.plan[l], pausas=S.pausas[l];
+  const cur=curSlot();
+
+  // Update badge
+  const badge=document.getElementById('dttl-badge');
+  if(badge){const n=ords.length;badge.textContent=n+' ordem'+(n!==1?'s':'');}
+
+  // Build timings (dynamic end times cascading)
+  const timings=buildOrderTimings(ords,l,pausas,cur);
+
+  // ── Armário partilhado entre todas as OPs da linha ──────────────────
+  // armarioOcupado: Set de slots onde o armário está a ser usado.
+  // Para cada sinal (qualquer estado), marca os slots [sigSlot, sigSlot+aSlots[.
+  // Construído cumulativamente: após cada OP, adicionar os seus sinais ao Set.
+  // Assim cada OP vê os slots ocupados por todas as OPs anteriores.
+  const armarioSlots = new Set(); // slots individuais ocupados pelo armário
+
+  const _addToArmario = (ord) => {
+    const q = pr(ord.pi, ord.sku);
+    const aS = Math.ceil((q.tp || q.ta || 40) / 10);
+    Object.entries(ord.ls).forEach(([ss, v]) => {
+      if (v.st === 'confirmed' || v.st === 'missed' || v.st === 'pending' || v.st === 'planned') {
+        for (let k = 0; k < aS; k++) armarioSlots.add((+ss) + k);
+      }
+    });
+  };
+
+  // Run stock model per order
+  // armarioSlots começa vazio. Cada OP recebe o Set com apenas os sinais
+  // das OPs JÁ PROCESSADAS (anteriores). Após computeStockModel, os novos
+  // sinais desta OP são adicionados ao Set para as OPs seguintes os verem.
+  // NUNCA adicionar antes: os sinais antigos (planned/pending obsoletos)
+  // bloqueariam slots que deviam ficar livres para novos sinais.
+  // workBefore (trabalho restante das OPs anteriores, em slots) vem já calculado
+  //  em buildOrderTimings (t.workBefore) — fonte ÚNICA, usada tanto para
+  //  POSICIONAR (effStart reposicionado) como para a COR do 1º sinal
+  //  (amarelo só quando a linha está mesmo a chegar a esta OP).
+  ords.forEach((o,oi)=>{
+    const t=timings[oi];
+    const nextOrd = oi+1 < ords.length ? ords[oi+1] : null;
+
+    // Stock residual da OP anterior no slot effStart desta OP:
+    // replica a lógica do buildRaw — chegadas confirmadas, menos entregas reais,
+    // menos consumo nominal (cS) nos slots sem entregas registadas.
+    // Isto dá o stock real disponível quando esta OP arranca.
+    let prevStockResidual = 0;
+    if (oi > 0) {
+      const prevO   = ords[oi - 1];
+      const prevQ   = pr(prevO.pi, prevO.sku);
+      const prevCS  = getCSpan(prevQ, l) || (prevQ.lt || 25) / getArrSlots(prevQ, l);
+      const prevEffStart = timings[oi - 1].effStart;
+      const prevEffEnd   = timings[oi - 1].effEnd;
+      const cap = t.effStart + 1;
+
+      // Chegadas confirmadas
+      const arrAt = new Array(cap).fill(0);
+      Object.entries(prevO.ls).forEach(([ss, v]) => {
+        if (v.st === 'confirmed') {
+          const fin = +ss + getArrSlots(prevQ, l, v._coolType);
+          if (fin < cap) arrAt[fin] += (v.actualLogs || v.vl || prevQ.lt || 25);
+        }
+      });
+      // Arrefecimentos manuais sem lote confirmado no mesmo slot
+      Object.entries(prevO.rows.a).forEach(([ss, kg]) => {
+        const s = +ss;
+        if (s < cap && kg > 0 && !(prevO.ls[s] && prevO.ls[s].st === 'confirmed')) {
+          arrAt[s] += prevQ.pw ? Math.floor(kg / prevQ.pw) : 0;
+        }
+      });
+      // Entregas reais por slot
+      const entAt = new Array(cap).fill(0);
+      Object.entries(prevO.rows.e).forEach(([ss, v]) => {
+        const s = +ss;
+        if (s < cap && v > 0) entAt[s] += +v;
+      });
+      // Slot da última entrega real registada
+      const lastEntSlotPrev = Object.keys(prevO.rows.e)
+        .reduce((m, ss) => (prevO.rows.e[+ss] > 0 && +ss < cap ? Math.max(m, +ss) : m), -1);
+
+      // Acumular stock com consumo nominal nos slots sem entregas (igual ao buildRaw)
+      // IMPORTANTE: consome até cap (effStart da OP seguinte), não só até prevEffEnd —
+      // a OP anterior continua a ser consumida enquanto houver stock, mesmo que
+      // o fim nominal (prevEffEnd) já tenha passado (caso de atraso real).
+      let running = 0;
+      for (let s = 0; s < cap; s++) {
+        running += arrAt[s];
+        running -= entAt[s];
+        // Consumo nominal em qualquer slot activo após o arranque da OP anterior,
+        // enquanto houver stock, nos slots sem entrega real registada.
+        if (s >= prevEffStart && !pausas.has(s) && entAt[s] === 0 && running > 0) {
+          running -= prevCS;
+        }
+        if (running < 0) running = 0;
+      }
+      prevStockResidual = Math.round(running);
+      // Residual de produto DIFERENTE não conta: se a OP anterior é outro SKU,
+      // o armário pode ter produto A mas OP2 precisa de produto B — não é stock
+      // utilizável. Só carrega residual se for o mesmo SKU (mesma referência).
+      if ((prevO.sku || '') !== (o.sku || '')) prevStockResidual = 0;
+    }
+
+    computeStockModel(o, l, pausas, cur, oi===0, t.effStart, t.effEnd, nextOrd, t.cS, t.planStart, armarioSlots, t.workBefore, prevStockResidual);
+    // Após gerar sinais: registar os slots desta OP no armário global
+    _addToArmario(o);
+  });
+  // (Segundo passo removido) — o sinal pré-arranque de cada OP já é gerado
+  // pelo próprio computeStockModel: cada OP, ao arrancar sem stock, dispara a
+  // sua 1ª rutura em effStart e coloca o sinal `lead` slots antes (mesmo que
+  // isso caia antes do arranque). Gerar aqui um segundo sinal dependente de
+  // `cur` duplicava barras e provocava o aparecer/desaparecer ao mover o
+  // relógio. Tudo passa agora por um único ponto de cálculo, estável.
+
+  // Build stock timeline for logs row
+  const stockLines=ords.map(o=>buildStockTimeline(o,l,pausas,cur));
+
+  buildKPIs(l,ords);
+  buildStatusBar(ords,l,pausas,cur,timings);
+  buildGantt(l,ords,pausas,cur,timings,stockLines);
+  updateLineDots(cur);
+}
+
+// Actualiza o dot de estado em cada tab de linha
+function updateLineDots(cur) {
+  [1,2,3,4,5,6].forEach(ln => {
+    const dot = document.getElementById('ldot-'+ln);
+    if (!dot) return;
+    const ords = S.plan[ln];
+    const pausas = S.pausas[ln];
+    if (!ords || !ords.length) { dot.className='ltab-dot'; return; }
+
+    // Verificar estado dos sinais de todas as OPs desta linha
+    let hasMissed = false, hasPending = false, hasActive = false;
+    ords.forEach(o => {
+      const vals = Object.values(o.ls);
+      if (vals.some(v => v.st === 'missed')) hasMissed = true;
+      if (vals.some(v => v.st === 'pending')) hasPending = true;
+      if (sumO(o.rows.e) > 0 && Math.max(0, Math.ceil((o.kgs||0)/((pr(o.pi,o.sku).pw)||10)) - sumO(o.rows.e)) > 0) hasActive = true;
+    });
+
+    if (hasMissed) dot.className = 'ltab-dot err';
+    else if (hasPending) dot.className = 'ltab-dot warn';
+    else if (hasActive) dot.className = 'ltab-dot ok';
+    else dot.className = 'ltab-dot';
+  });
+}
+
+function buildStatusBar(ords,l,pausas,cur,timings){
+  let html='';
+  // Alert: missed or pending lotes
+  const alerted=new Set();
+  ords.forEach((o,oi)=>{
+    const vals=Object.values(o.ls);
+    const hasMissed=vals.some(v=>v.st==='missed');
+    const hasPending=vals.some(v=>v.st==='pending');
+    const hasConfirmed=vals.some(v=>v.st==='confirmed');
+    const label=o.ordem||'OP'+(oi+1);
+    // Alerta mostra SEMPRE que há missed/pending, independentemente de confirmados.
+    if(hasMissed&&!alerted.has(label)){
+      html+='<div class="alert-badge">&#9888; LOTE EM FALTA: '+label+'</div>';
+      alerted.add(label);
+    } else if(hasPending&&!alerted.has(label)){
+      html+='<div class="schip late" style="animation:pulse-red .9s infinite">&#9679; Colocar lote: '+label+'</div>';
+      alerted.add(label);
+    }
+  });
+  // Performance chips — só para OPs que já arrancaram
+  ords.forEach((o,oi)=>{
+    if(!hasStarted(o))return;
+    const t=timings[oi];
+    const q=pr(o.pi,o.sku);
+    const cS=getCSpan(q,l);
+    const ent=sumO(o.rows.e), tL=cLogs(o);
+    const logsRest=Math.max(0,tL-ent);
+    if(logsRest===0)return; // OP completa, não mostrar
+    // Delta = entregues vs planeado esperado até agora
+    if(!cS||cS<=0)return;
+    const expected=(()=>{
+      let p=0;
+      for(let s=o.startSlot;s<cur&&s<SLOTS;s++){if(!pausas.has(s))p+=cS;}
+      return p;
+    })();
+    const delta=Math.round(ent-expected);
+    const minDiff=Math.round(Math.abs(delta)/cS)*10;
+    const sign=delta>=0?'+':'';
+    const cls=delta>=0?'ok':'late';
+    const arrow=delta>=0?'&#9650;':'&#9660;';
+    const timeStr=' ('+sign+minDiff+'min)';
+    html+='<div class="schip '+cls+'">'+arrow+' '+esc(o.ordem||String(oi+1))+': '+sign+delta+' logs'+timeStr+'</div>';
+  });
+  if(!html)html='<div class="schip neu">Sem entregas registadas</div>';
+  document.getElementById('sbar').innerHTML=html;
+}
+
+function buildKPIs(l,ords){
+  let tK=0,tL=0,tD=0,tA=0,tE=0;
+  ords.forEach(o=>{
+    const q=pr(o.pi,o.sku);
+    tK+=o.kgs||0;tL+=cLogs(o);
+    tD+=sumO(o.rows.d);
+    tA+=q.pw?Math.floor(sumO(o.rows.a)/q.pw):0;
+    tE+=sumO(o.rows.e);
+  });
+  document.getElementById('kstrip').innerHTML=[
+    {l:'KGs Planeados',v:tK.toLocaleString('pt-PT'),c:'var(--tx)'},
+    {l:'Total Logs',v:tL,c:'var(--tx2)'},
+    {l:'KGs Desinfet.',v:tD.toLocaleString('pt-PT'),c:'#1A5880'},
+    {l:'Logs Arrefec.',v:tA,c:'#2A8A50'},
+    {l:'Logs Entregues',v:tE,c:'var(--gld)'},
+  ].map(c=>'<div class="kc"><div class="kl">'+c.l+'</div><div class="kv" style="color:'+c.c+'">'+c.v+'</div></div>').join('');
+}
+
+function buildGantt(l,ords,pausas,cur,timings,stockLines){
+  const hd=document.getElementById('gHd'), bd=document.getElementById('gBd');
+  hd.innerHTML=''; bd.innerHTML='';
+
+  // Header
+  const hr=document.createElement('tr'); hr.className='hdr';
+  [{cls:'co sx0 hinfo',t:'Ordem'},{cls:'cp sx1 hinfo',t:'PI'},{cls:'cd sx2 hinfo',t:'Descricao'},
+    {cls:'csk sx1b hinfo',t:'SKU'},
+    {cls:'cs sx3a hinfo',t:'KGs'},{cls:'cs sx3b hinfo',t:'Logs Plan.'},{cls:'cs sx3c hinfo',t:'Logs Ent.'},{cls:'cs sx3d hinfo',t:'Rutura'},{cls:'cs sx3 hinfo',t:''}]
+    .forEach(c=>{const th=document.createElement('th');th.className=c.cls;th.style.cssText='font-size:9px;text-align:center;';th.textContent=c.t;hr.appendChild(th);});
+  for(let s=0;s<SLOTS;s++){
+    const th=document.createElement('th'); th.className='csl';
+    th.textContent=s2t(s);
+    if(s===cur) th.classList.add('hnow');
+    if(s%6===5) th.classList.add('hsep');
+    hr.appendChild(th);
+  }
+  hd.appendChild(hr);
+
+  // Pausa row
+  const prr=document.createElement('tr'); prr.className='pr';
+  const tlbl=document.createElement('td'); tlbl.className='plbl sx0'; tlbl.colSpan=9; tlbl.textContent='PAUSAS'; prr.appendChild(tlbl);
+  for(let s=0;s<SLOTS;s++){
+    const td=document.createElement('td'); td.className='psl'+(s%6===5?' hs':'');
+    if(s===cur) td.classList.add('cnow');
+    if(pausas.has(s)) td.classList.add('ip');
+    td.addEventListener('click',()=>{
+      if(!document.getElementById('chkP').checked)return;
+      pausas.has(s)?pausas.delete(s):pausas.add(s);
+      const gs=document.getElementById('gscroll'); const sc=gs.scrollLeft;
+      renderDash(); gs.scrollLeft=sc;
+    });
+    prr.appendChild(td);
+  }
+  bd.appendChild(prr);
+
+  // Production map — slots cinzentos = planStart da OP até planStart da OP seguinte
+  const prodMap=new Array(SLOTS).fill(-1);
+  ords.forEach((o,oi)=>{
+    const start = o.startSlot || 0;
+    const next  = oi+1 < ords.length ? (ords[oi+1].startSlot || SLOTS) : SLOTS;
+    for(let s=start; s<Math.min(next,SLOTS); s++){
+      if(!pausas.has(s) && prodMap[s]===-1) prodMap[s]=oi;
+    }
+  });
+
+  // Order rows
+  ords.forEach((o,oi)=>{
+    const q=pr(o.pi,o.sku);
+    const aSlots=Math.ceil((q.tp||q.ta)/10);
+    const t=timings[oi];
+    const inProd=prodMap[cur]===oi;
+    const stockLine=stockLines[oi];
+
+    const subRows=[
+      {key:'d',   lbl:'KGs Desinfetados',       col:'#1A5880'},
+      {key:'a',   lbl:'KGs Arrefecidos',         col:'#2A8A50'},
+      {key:'logs',lbl:'Logs Arrefecidos',        col:'var(--mu)',ro:true},
+      {key:'stk', lbl:'Prod. Arref. por Entregar', col:'#7A3090',ro:true},
+      {key:'e',   lbl:'Logs Entregues',          col:'var(--gld)'},
+    ];
+
+    // OP activa = em produção neste slot E já tem a 1ª entrega feita
+    const isActive = inProd && sumO(o.rows.e) > 0;
+    // isDone2 hoisted: precisa de estar fora do forEach para aplicar a TODAS as 5 subrows
+    const logsNec2 = Math.ceil((o.kgs||0)/(q.pw||10));
+    const logsEnt2 = sumO(o.rows.e);
+    const isDone2  = !!(o._manualDone || (o.ls && o.ls['__done__'])) || (logsEnt2>0 && logsEnt2>=logsNec2 && logsNec2>0);
+
+    subRows.forEach((sr,ri)=>{
+      const tr=document.createElement('tr');
+      tr.className='or'+(ri===0?' orsep':'')+(inProd?' inp':'');
+      if(isActive) tr.classList.add('order-active');
+      if(isDone2)  tr.classList.add('order-done');   // ← aplica a todas as 5 subrows
+
+      if(ri===0){
+        // isDone2/logsNec2/logsEnt2 already computed above (hoisted)
+        const mk=(cls,txt,tip)=>{const td=document.createElement('td');td.className='om '+cls+(inProd?' inp':'');td.rowSpan=5;td.textContent=txt;if(tip)td.title=tip;return td;};
+        // order-active visual indicator in first row sticky cells handled by CSS
+        {
+          const tdOr = document.createElement('td');
+          tdOr.className = 'om co sx0 oor' + (inProd?' inp':'');
+          tdOr.rowSpan = 5;
+          // position:relative removido — sx0 já define position:sticky
+          const orNum = document.createElement('div');
+          orNum.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx2);';
+          orNum.textContent = o.ordem || String(oi+1);
+          tdOr.appendChild(orNum);
+          // Botão Fim de Ordem
+          const btnFim = document.createElement('button');
+          btnFim.title = isDone2 ? 'Reabrir ordem' : 'Registar fim de ordem';
+          btnFim.style.cssText = 'margin-top:4px;display:block;width:100%;padding:2px 3px;font-size:9px;font-weight:700;letter-spacing:.3px;border-radius:2px;cursor:pointer;border:1px solid '+(isDone2?'var(--sg-b)':'var(--bd2)')+';background:'+(isDone2?'#E9F4EE':'var(--sf2)')+';color:'+(isDone2?'var(--sg-b)':'var(--mu)')+';line-height:1.2;';
+          btnFim.textContent = isDone2 ? '✓ FIM' : '⏹ FIM';
+          btnFim.addEventListener('click', (ev) => { ev.stopPropagation(); showFimOrdem(o, l, ords); });
+          tdOr.appendChild(btnFim);
+          tr.appendChild(tdOr);
+        }
+        tr.appendChild(mk('cp sx1 opi',o.pi));
+        tr.appendChild(mk('cd sx2 ode',dsc(o.pi,o.sku),dsc(o.pi,o.sku)));
+        // SKU + cooling time cell
+        const tdSku=document.createElement('td');tdSku.className='om csk sx1b'+(inProd?' inp':'');tdSku.rowSpan=5;
+        const skuV=o.sku||'';
+        const skuQ=skuV?STD_SKU[String(skuV)]:null;
+        const skuTa=skuQ?skuQ.ta:null;
+        tdSku.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--blu)">'+(skuV||'—')+'</div>'
+          +(skuTa?'<div style="font-size:9px;color:var(--mu);margin-top:1px">'+skuTa+'min</div>':'');
+        tr.appendChild(tdSku);
+        const tdKg=document.createElement('td');tdKg.className='om sx3a';tdKg.rowSpan=5;
+        tdKg.style.cssText='text-align:center;font-size:10px;color:var(--tx2);padding:2px 3px;border-right:1px solid var(--bd);';
+        tdKg.innerHTML='<b>'+(o.kgs||0).toLocaleString('pt-PT')+'</b>';tr.appendChild(tdKg);
+        const tdLn=document.createElement('td');tdLn.className='om sx3b';tdLn.rowSpan=5;
+        tdLn.style.cssText='text-align:center;font-size:10px;color:var(--red);padding:2px 3px;border-right:1px solid var(--bd);';
+        tdLn.innerHTML='<b>'+logsNec2+'</b>';tr.appendChild(tdLn);
+        const entCol=isDone2?'var(--sg-b)':logsEnt2>0?'var(--gld)':'var(--mu)';
+        const tdLe=document.createElement('td');tdLe.className='om sx3c';tdLe.rowSpan=5;
+        tdLe.style.cssText='text-align:center;font-size:10px;color:'+entCol+';padding:2px 3px;border-right:1px solid var(--bd);';
+        tdLe.innerHTML='<b>'+(logsEnt2||'—')+'</b>';tr.appendChild(tdLe);
+        // Coluna "Rutura": 1º slot (≥ arranque) em que o stock CONFIRMADO
+        // disponível chega a 0 com a linha ainda a consumir. Lê o modelo
+        // unificado o._sm — mesmo cálculo que coloca as barras de frio.
+        const tdRup=document.createElement('td');tdRup.className='om sx3d';tdRup.rowSpan=5;
+        tdRup.style.cssText='text-align:center;font-size:9px;padding:2px 2px;font-weight:700;';
+        {
+          // A Rutura lê o MESMO modelo que gera os sinais (o._sm), calculado
+          // em computeStockModel a partir SÓ dos lotes confirmados. Assim o
+          // valor é sempre coerente com "Prod. Arref. por Entregar" e com as
+          // barras de frio — nunca diverge.
+          const sm = o._sm || {};
+          const rup2 = (sm.ruptureSlot == null) ? -1 : sm.ruptureSlot;
+          // ✓ SÓ quando o modelo devolve -1 (já não falta arrefecer nada para
+          // completar a OP). Enquanto houver logs por arrefecer, mostra-se
+          // sempre a próxima slot de rutura.
+          if(rup2>=0){
+            const hh=Math.floor(rup2/6).toString().padStart(2,'0');
+            const mm=((rup2%6)*10).toString().padStart(2,'0');
+            const lead=sm.lead||sm.arrSlots||0;
+            const sigSlot=Math.max(0,rup2-lead);
+            const shh=Math.floor(sigSlot/6).toString().padStart(2,'0');
+            const smm=((sigSlot%6)*10).toString().padStart(2,'0');
+            const isUrgent=rup2<=cur+lead;
+            tdRup.innerHTML='<span style="color:'+(isUrgent?'var(--red)':'#c06000')+'">'+hh+':'+mm+'</span>';
+            tdRup.title='Rutura: '+hh+':'+mm+' | Sinal sugerido: '+shh+':'+smm;
+          } else {
+            tdRup.innerHTML='<span style="color:var(--sg-b);font-size:11px">✓</span>';
+            tdRup.title='OP coberta — não falta arrefecer mais nada';
+          }
+        }
+        tr.appendChild(tdRup);
+      }
+
+      const ts=document.createElement('td'); ts.className='cs sx3 slbl'; ts.style.color=sr.col; ts.textContent=sr.lbl; tr.appendChild(ts);
+
+      for(let s=0;s<SLOTS;s++){
+        const td=document.createElement('td');
+        td.className='sc'+(s%6===5?' hs':'');
+        if(s===cur) td.classList.add('cnow');
+
+        const inn=document.createElement('div'); inn.className='si';
+        const isPau=pausas.has(s);
+        const isProd=prodMap[s]===oi;
+        const lotE=o.ls[s];
+        const isLote=lotE!==undefined;
+
+        if(sr.key==='d'){
+          if(!isPau && isProd) td.classList.add('sp');
+          inn.appendChild(mkinp(o.rows.d,s,sr.col,l,ords)); // sempre editável (pausa não bloqueia)
+        }
+
+        else if(sr.key==='a'){
+          if(isPau && !isLote){
+            // Pausa sem sinal → fundo normal (branco) + clicável
+            td.style.cursor='pointer';
+            td.addEventListener('click',ev=>{
+              ev.stopPropagation();
+              if(!o.ls[s]) o.ls[s]={st:'pending',vl:q.lt||25};
+              const le=o.ls[s];
+              openLoteInput(le, q, q.lt||25, Math.round((q.lt||25)*(q.pw||10)), o, l, ords, td, 'kgs');
+            });
+          } else if(isLote){
+            // Sinal de lote (mesmo em pausa) → mostrar normalmente
+            // Slot com sinal de lote — mostra cor + KGs + abre modal
+            const st=lotE.st;
+            if(st==='confirmed') td.classList.add('sg');
+            else if(st==='missed') td.classList.add('smiss');
+            else if(st==='planned') td.classList.add('splan');
+            else td.classList.add('sy');
+            const lotPw=lotE.pw||q.pw||10;
+            const lotLogsBase=Math.round(lotE.vl||q.lt||25);
+            const lotLogs=st==='confirmed'?(lotE.actualLogs||lotLogsBase):lotLogsBase;
+            // Kgs: se confirmed e actualKgs existe, usar valor congelado (não recalcular de actualLogs)
+            const lotKgs=st==='confirmed'&&lotE.actualKgs!=null?lotE.actualKgs:Math.round(lotLogs*lotPw);
+            const col=st==='confirmed'?'var(--sg-b)':st==='missed'?'var(--sr-b)':st==='planned'?'var(--mu)':'var(--gld)';
+            const dv=document.createElement('div');
+            dv.style.cssText='text-align:center;line-height:1.2;';
+            dv.innerHTML='<span style="font-size:8px;font-weight:700;color:'+col+'">'+lotKgs+'kg</span>';
+            inn.appendChild(dv);
+            td.style.cursor='pointer';
+            td.addEventListener('click',ev=>{
+              ev.stopPropagation();
+              openLoteInput(lotE, q, lotLogsBase, Math.round(lotLogsBase*lotPw), o, l, ords, td, 'kgs');
+            });
+          }
+          else {
+            // Sem sinal: slot normal de produção ou outro — sempre clicável
+            // Mostra input se há valor, ou abre modal ao clicar
+            if(isProd) td.classList.add('sp');
+            // Se já há valor manual registado, mostra-o
+            const valA = o.rows.a[s];
+            if(valA != null && valA > 0){
+              const dv=document.createElement('div');
+              dv.style.cssText='text-align:center;font-size:8px;font-weight:700;color:#2A8A50;';
+              dv.textContent=Math.round(valA)+'kg';
+              inn.appendChild(dv);
+            }
+            // Sempre clicável para registar KGs arrefecidos manualmente
+            td.style.cursor='pointer';
+            td.addEventListener('click',ev=>{
+              ev.stopPropagation();
+              // Criar um lotE temporário para este slot se não existir
+              if(!o.ls[s]) o.ls[s]={st:'pending',vl:q.lt||25};
+              const le=o.ls[s];
+              const defLogs=q.lt||25;
+              const defKgs=Math.round(defLogs*(q.pw||10));
+              openLoteInput(le, q, defLogs, defKgs, o, l, ords, td, 'kgs');
+            });
+          }
+        }
+        else if(sr.key==='logs'){
+          // Show stock countdown: only at slots where arrec happened or lote confirmed
+          // Value = running stock (arrec - cumulative deliveries), shown only at event slots
+          if(isPau && !isLote){
+            // Pausa sem sinal → fundo normal (branco) + clicável
+            td.style.cursor='pointer';
+            td.addEventListener('click',ev=>{
+              ev.stopPropagation();
+              if(!o.ls[s]) o.ls[s]={st:'pending',vl:q.lt||25};
+              const le=o.ls[s];
+              openLoteInput(le, q, q.lt||25, Math.round((q.lt||25)*(q.pw||10)), o, l, ords, td, 'logs');
+            });
+          } else if(isLote){
+            // Sinal de lote (mesmo em pausa) → mostrar normalmente
+            const st=lotE.st;
+            const lotPw   = lotE.pw || q.pw || 10;
+            const lotLogs = Math.round(lotE.vl || q.lt || 25);
+            const lotKgs  = Math.round(lotLogs * lotPw);
+
+            // Apply CSS class
+            if(st==='confirmed') td.classList.add('sg');
+            else if(st==='missed') td.classList.add('smiss');
+            else if(st==='planned') td.classList.add('splan');
+            else td.classList.add('sy');
+
+            // Click handler — abre modal focado em Logs
+            td.style.cursor='pointer';
+            td.addEventListener('click', ev => {
+              ev.stopPropagation();
+              if (lotE.st === 'confirmed') {
+                // Lote já confirmado: ajustar SÓ o nº de logs. Os kgs ficam
+                // CONGELADOS (não são recalculados pela relação do SKU). O nº de
+                // logs que defines à mão (actualLogs) é o que conta para o stock
+                // e para os logs que faltam arrefecer/entregar até terminar a OP.
+                const frozenKgs = lotE.actualKgs != null ? lotE.actualKgs : lotKgs;
+                const curLogs   = lotE.actualLogs != null ? lotE.actualLogs : lotLogs;
+                openLoteInput(lotE, q, curLogs, frozenKgs, o, l, ords, td, 'logsAdjust');
+              } else {
+                openLoteInput(lotE, q, lotLogs, lotKgs, o, l, ords, td, 'logs');
+              }
+            });
+
+            // Row 'logs' mostra APENAS nº de logs (sem kgs)
+            const displayLogs = st==='confirmed' ? (lotE.actualLogs || lotLogs) : lotLogs;
+            const logCol = st==='confirmed'?'var(--sg-b)':st==='missed'?'var(--sr-b)':st==='planned'?'var(--mu)':'var(--gld)';
+            const dv=document.createElement('div');
+            dv.style.cssText='text-align:center;line-height:1.2;';
+            dv.innerHTML='<span style="font-family:Barlow Condensed,sans-serif;font-size:10px;font-weight:700;color:'+logCol+'">'+displayLogs+'</span>';
+            inn.appendChild(dv);
+          }
+          else {
+            // Sem sinal: slot normal — sempre clicável para registar logs arrefecidos
+            if(isProd) td.classList.add('sp');
+            const valL = o.rows.a[s];
+            if(valL != null && valL > 0){
+              const pw2=q.pw||10;
+              const logsVal=Math.round(valL/pw2);
+              const dv=document.createElement('div');
+              dv.style.cssText='text-align:center;font-size:10px;font-weight:700;color:var(--mu);';
+              dv.textContent=logsVal;
+              inn.appendChild(dv);
+            }
+            td.style.cursor='pointer';
+            td.addEventListener('click',ev=>{
+              ev.stopPropagation();
+              if(!o.ls[s]) o.ls[s]={st:'pending',vl:q.lt||25};
+              const le=o.ls[s];
+              const defLogs=q.lt||25;
+              const defKgs=Math.round(defLogs*(q.pw||10));
+              openLoteInput(le, q, defLogs, defKgs, o, l, ords, td, 'logs');
+            });
+          }
+          // Show at slots with manual arrec entry (KGs → logs) or delivery (countdown)
+          if(!isPau&&!isLote){
+            const hasArrec=(o.rows.a[s]||0)>0;
+            const hasEnt=(o.rows.e[s]||0)>0;
+            if((hasArrec||hasEnt)&&stockLine[s]!==null){
+              const dv=document.createElement('span');dv.style.color='var(--mu)';
+              dv.textContent=stockLine[s]>0?stockLine[s]:0;inn.appendChild(dv);
+            }
+          }
+        }
+
+        else if(sr.key==='stk'){
+          // Produto Arrefecido por Entregar = stock intermédio slot a slot
+          // = logs saídos do armário até slot s − logs entregues até slot s
+          const logsChegStk = Object.entries(o.ls)
+            .filter(([ss,v]) => v.st==='confirmed' && (+ss + getArrSlots(q, l, v._coolType)) <= s)
+            .reduce((sum,[,v]) => sum + (v.actualLogs||v.vl||q.lt||25), 0);
+          const logsEntStk = Object.entries(o.rows.e)
+            .filter(([ss]) => +ss <= s)
+            .reduce((sum,[,v]) => sum + (+v||0), 0);
+          const stkVal = Math.max(0, logsChegStk - logsEntStk);
+          const hasStkData = logsChegStk > 0 || logsEntStk > 0;
+          if(hasStkData){
+            if(!isPau && isProd) td.classList.add('sp');
+            const _dAs = getArrSlots(q, l); const pRep2 = _dAs * (getCSpan(q,l) || ((q.lt||25)/Math.max(1,_dAs)));
+            const stkColor = stkVal <= 0 ? 'var(--sr-b)' : stkVal <= pRep2 ? '#FFF3CC' : '#E8F5EC';
+            td.style.background = stkColor;
+            const dv = document.createElement('div');
+            dv.style.cssText = 'text-align:center;font-size:10px;font-weight:700;color:#7A3090;line-height:1;padding:2px 0;';
+            dv.textContent = stkVal;
+            inn.appendChild(dv);
+          } else if(!isPau && isProd) {
+            td.classList.add('sp');
+          }
+        }
+
+        else if(sr.key==='e'){
+          if(isPau) td.classList.add('sau');
+          else if(isProd) td.classList.add('sp');
+          if(!isPau){
+            // Indicador ↓: mostrar em slots de produção onde há stock disponível
+            // Stock disponível = logs chegados ATÉ este slot - logs entregues ATÉ este slot
+            if(isProd){
+              // Usar aSlots (ta) para arrival — logs prontos após T.Arr, não tp
+              const logsNecE = Math.ceil((o.kgs||0)/(q.pw||10));
+              // Logs de lotes confirmados prontos: confirmado em ss → pronto em ss+taSlots
+              const logsChegE = Object.entries(o.ls)
+                .filter(([ss,v]) => v.st==='confirmed' && (+ss + getArrSlots(q, l, v._coolType)) <= s)
+                .reduce((sum,[,v]) => sum + (v.actualLogs||v.vl||q.lt||25), 0);
+              // Logs já entregues até AGORA (incluindo este slot para evitar double-count)
+              const logsEntAteAgora = Object.entries(o.rows.e)
+                .reduce((sum,[,v]) => sum + (+v||0), 0);
+              const stockDispE = Math.max(0, logsChegE - logsEntAteAgora);
+              const logsRestE = Math.max(0, logsNecE - sumO(o.rows.e));
+              if(stockDispE > 0 && logsRestE > 0 && !(o.rows.e[s] > 0)){
+                const arrow = document.createElement('div');
+                arrow.style.cssText = 'text-align:center;font-size:11px;font-weight:700;color:#2A8A50;pointer-events:none;';
+                arrow.textContent = '↓';
+                inn.appendChild(arrow);
+              }
+            }
+            inn.appendChild(mkinpEntrega(o,s,sr.col,l,ords,q));
+          }
+        }
+
+        td.appendChild(inn);
+        const ttt=s2t(s)+' | '+dsc(o.pi,o.sku).substring(0,22)+(isProd?' [prod]':isLote?' ['+((lotE&&lotE.st)||'')+']':'');
+        td.addEventListener('mouseenter',ev=>tipShow(ev,ttt));
+        td.addEventListener('mouseleave',tipHide);
+        tr.appendChild(td);
+      }
+      bd.appendChild(tr);
+    });
+  });
+}
+
+
+// ── Fim de Ordem manual ────────────────────────────────────────────────
+function showFimOrdem(o, l, ords) {
+  const existing = document.getElementById('fimOrdemModal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'fimOrdemModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:flex;align-items:center;justify-content:center;';
+  const isManuDone = !!(o._manualDone || (o.ls && o.ls['__done__']));
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:6px;padding:22px 26px;min-width:240px;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,.2);font-family:Barlow,sans-serif;">
+      <div style="font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:800;color:var(--red);margin-bottom:6px;letter-spacing:.5px">FIM DE ORDEM</div>
+      <div style="font-size:11px;color:var(--mu);margin-bottom:14px;font-weight:600">OP ${o.ordem||''} · ${dsc(o.pi,o.sku).substring(0,30)}</div>
+      ${isManuDone
+        ? `<div style="font-size:12px;color:var(--sg-b);font-weight:700;margin-bottom:14px;">✓ Ordem já marcada como concluída.</div>
+           <div style="font-size:11px;color:var(--mu);margin-bottom:14px;">Quer reabrir a ordem?</div>`
+        : `<div style="font-size:12px;color:var(--tx);margin-bottom:14px;">Quer registar o fim desta ordem?<br><span style="font-size:10px;color:var(--mu)">Os logs ainda por entregar ficam registados como concluídos.</span></div>`
+      }
+      <div style="display:flex;gap:8px;">
+        <button id="fimOrdemNao" style="flex:1;padding:8px;border:1px solid var(--bd2);background:var(--sf2);border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">Não</button>
+        <button id="fimOrdemSim" style="flex:2;padding:8px;background:${isManuDone?'#c06000':'var(--sg-b)'};color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;">${isManuDone?'Reabrir Ordem':'Sim, concluir'}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('fimOrdemNao').addEventListener('click', () => modal.remove());
+  document.getElementById('fimOrdemSim').addEventListener('click', () => {
+    if (isManuDone) {
+      delete o.ls['__done__'];
+      o._manualDone = false;
+    } else {
+      o.ls['__done__'] = { done: true, ts: Date.now() };
+      o._manualDone = true;
+    }
+    modal.remove();
+    const gs = document.getElementById('gscroll'); const sc = gs.scrollLeft;
+    buildKPIs(l, ords); renderDash(); gs.scrollLeft = sc;
+    saveOrderState(o);
+  });
+  modal.addEventListener('click', ev => { if (ev.target === modal) modal.remove(); });
+}
+
+// ── Lote input modal ──
+function openLoteInput(lotE, q, defLogs, defKgs, o, l, ords, td, mode) {
+  // Remove any existing modal
+  const existing = document.getElementById('loteModal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'loteModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;';
+
+  const pw = lotE.pw || q.pw || 10;
+  const isLogsAdjust = mode === 'logsAdjust';   // ajustar só logs, kgs congelados
+  const isKgsMode  = mode === 'kgs';
+  const isLogsMode = mode === 'logs' || isLogsAdjust || !mode;
+  const oDesc  = dsc(o.pi, o.sku);
+  const oLabel = (o.ordem ? 'OP '+o.ordem+' · ' : '') + oDesc.substring(0,30);
+  const modeLabel = isKgsMode ? 'KGS ARREFECIDOS' : (isLogsAdjust ? 'AJUSTAR LOGS (KGs FIXOS)' : 'LOGS ARREFECIDOS');
+  const inputField = isKgsMode
+    ? `<div>
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">KGs</label>
+        <input id="loteKgsInp" type="number" min="0" step="1" value="${defKgs}"
+          style="width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:3px;font-size:18px;font-weight:700;text-align:center;outline:none;">
+        <input id="loteLogsInp" type="hidden" value="${defLogs}">
+      </div>`
+    : `<div>
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Logs</label>
+        <input id="loteLogsInp" type="number" min="0" step="1" value="${defLogs}"
+          style="width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:3px;font-size:18px;font-weight:700;text-align:center;outline:none;">
+        <input id="loteKgsInp" type="hidden" value="${defKgs}">
+      </div>`;
+
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:6px;padding:24px 28px;min-width:260px;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.2);font-family:Barlow,sans-serif;">
+      <div style="font-family:Barlow Condensed,sans-serif;font-size:15px;font-weight:800;color:var(--red);margin-bottom:2px;letter-spacing:.5px">${isLogsAdjust ? 'AJUSTAR Nº DE LOGS' : 'REGISTAR ARREFECIMENTO'}</div>
+      <div style="font-size:10px;color:var(--mu);margin-bottom:8px;font-weight:600">${oLabel}</div>
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:14px;background:var(--sf2);border:1px solid var(--bd);border-radius:3px;padding:6px 10px;">
+        ${isLogsAdjust
+          ? `KGs fixos: <b>${defKgs} kg</b><br><span style="font-size:9px;color:var(--mu)">Corrige só os logs deste lote — os kg não mudam. Os logs em falta da OP são recalculados com este valor.</span>`
+          : `Sugerido (1 carro): <b>${defLogs} logs</b> · <b>${defKgs} kg</b><br><span style="font-size:9px;color:var(--mu)">Pode inserir mais (vários carros) — vale sempre o valor introduzido.</span>`}
+      </div>
+      <div style="font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">${modeLabel}</div>
+      ${inputField}
+      <div style="margin-top:14px;display:flex;gap:8px;">
+        <button id="loteCancelBtn" style="flex:1;padding:8px;border:1px solid var(--bd2);background:var(--sf2);border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">Cancelar</button>
+        ${lotE.st==='confirmed'?`<button id="loteEraseBtn" style="padding:8px 10px;border:1px solid #e0a000;background:#fff8e8;border-radius:3px;font-size:13px;cursor:pointer;" title="Apagar valor confirmado">🧹</button>`:''}
+        ${q.tn
+          ? `<button id="loteConfirmMecBtn" style="flex:1;padding:7px 4px;background:#e8f4ff;color:#1A5880;border:1px solid #b3d4f0;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer;">🧊 Mecânico<br><span style='font-size:9px;font-weight:400'>${q.ta||'?'}min</span></button>
+             <button id="loteConfirmAzBtn" style="flex:1;padding:7px 4px;background:#e8fff2;color:#1a6638;border:1px solid #9fd9b8;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer;">❄️ Azoto<br><span style='font-size:9px;font-weight:400'>${q.tn}min</span></button>`
+          : `<button id="loteConfirmBtn" style="flex:2;padding:8px;background:var(--red);color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;">✓ Confirmar</button>`
+        }
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+
+  const kgsInp  = document.getElementById('loteKgsInp');
+  const logsInp = document.getElementById('loteLogsInp');
+
+  // Auto-converter: o campo visível actualiza o hidden.
+  // EXCEPÇÃO: em logsAdjust os kgs ficam CONGELADOS (sem conversão).
+  if (isKgsMode) {
+    kgsInp.addEventListener('input', () => {
+      logsInp.value = Math.round((+kgsInp.value || 0) / pw) || 0;
+    });
+  } else if (!isLogsAdjust) {
+    logsInp.addEventListener('input', () => {
+      kgsInp.value = Math.round((+logsInp.value || 0) * pw) || 0;
+    });
+  }
+
+  document.getElementById('loteCancelBtn').addEventListener('click', () => modal.remove());
+
+  // Botão borracha: apaga o valor confirmado e repõe ao estado original
+  const eraseBtn = document.getElementById('loteEraseBtn');
+  if (eraseBtn) {
+    eraseBtn.addEventListener('click', () => {
+      // Apagar os valores confirmados
+      delete lotE.actualLogs;
+      delete lotE.actualKgs;
+      delete lotE.pw;
+      // Repor estado: missed se slot < cur, planned se slot >= cur
+      const slotNum = +Object.entries(o.ls).find(([,v]) => v === lotE)?.[0];
+      if (!isNaN(slotNum)) {
+        const curNow = curSlot();
+        lotE.st = slotNum < curNow ? 'missed' : 'planned';
+      }
+      modal.remove();
+      const gs = document.getElementById('gscroll'); const sc = gs.scrollLeft;
+      buildKPIs(l, ords); renderDash(); gs.scrollLeft = sc;
+      saveOrderState(o);
+    });
+  }
+
+  // Botões de tipo de frio (quando PI tem azoto)
+  function doConfirm(coolType) {
+    const actualKgs  = +kgsInp.value  || 0;
+    const actualLogs = +logsInp.value || 0;
+    let finalLogs, finalKgs;
+    if (isLogsAdjust) {
+      finalLogs = actualLogs || 0;
+      finalKgs  = defKgs || lotE.actualKgs || 0;
+    } else if (isKgsMode) {
+      finalKgs  = actualKgs || 0;
+      finalLogs = Math.floor(finalKgs / pw);
+    } else {
+      finalLogs = actualLogs || 0;
+      finalKgs  = Math.round(finalLogs * pw);
+    }
+    if (finalLogs <= 0 && finalKgs <= 0) { modal.remove(); return; }
+    lotE.actualLogs = finalLogs;
+    lotE.actualKgs  = finalKgs;
+    lotE.pw = pw;
+    if (coolType) lotE._coolType = coolType; else delete lotE._coolType;
+    lotE.st = 'confirmed';
+    modal.remove();
+    const gs = document.getElementById('gscroll'); const sc = gs.scrollLeft;
+    buildKPIs(l, ords); renderDash(); gs.scrollLeft = sc;
+    saveOrderState(o);
+  }
+  const mecBtn = document.getElementById('loteConfirmMecBtn');
+  const azBtn  = document.getElementById('loteConfirmAzBtn');
+  if (mecBtn) mecBtn.addEventListener('click', () => doConfirm('mec'));
+  if (azBtn)  azBtn.addEventListener('click',  () => doConfirm('azoto'));
+  document.getElementById('loteConfirmBtn') && document.getElementById('loteConfirmBtn').addEventListener('click', () => doConfirm(null));
+
+  modal.addEventListener('click', ev => { if (ev.target === modal) modal.remove(); });
+  setTimeout(() => (isKgsMode ? kgsInp : logsInp).focus(), 50);
+}
+
+// Input helper — updates immediately on input (not just on blur)
+function mkinp(store,s,col,l,ords){
+  const inp=document.createElement('input'); inp.type='number'; inp.min='0';
+  inp.className='sinp'; inp.style.color=col;
+  inp.value=store[s]!=null?store[s]:'';
+  let _t=null;
+  const doUpdate=e=>{
+    store[s]=e.target.value===''?null:+e.target.value;
+    if(_t)clearTimeout(_t);
+    _t=setTimeout(()=>{
+      const gs=document.getElementById('gscroll'); const sc=gs.scrollLeft;
+      buildKPIs(l,ords); renderDash(); gs.scrollLeft=sc;
+      // Sync changed order state to Supabase
+      ords.forEach(o=>{ if(o.rows.d===store||o.rows.a===store||o.rows.e===store) saveOrderState(o); });
+    },500);
+  };
+  inp.addEventListener('input',doUpdate);
+  inp.addEventListener('change',doUpdate);
+  inp.addEventListener('click',e=>e.stopPropagation());
+  return inp;
+}
+
+// Input validado para Logs Entregues
+// Regra: logsEntregues[slot] ≤ logsArrefecidos - logsJáEntreguesNoutrosSlots
+function mkinpEntrega(o, s, col, l, ords, q) {
+  const inp = document.createElement('input');
+  inp.type = 'number'; inp.min = '0';
+  inp.className = 'sinp'; inp.style.color = col;
+  inp.value = o.rows.e[s] != null ? o.rows.e[s] : '';
+
+  let _t = null;
+  inp.addEventListener('click', e => e.stopPropagation());
+
+  const doUpdate = e => {
+    const newVal = e.target.value === '' ? null : +e.target.value;
+    if (newVal === null) {
+      o.rows.e[s] = null;
+      if (_t) clearTimeout(_t);
+      _t = setTimeout(() => {
+        const gs = document.getElementById('gscroll'); const sc = gs.scrollLeft;
+        buildKPIs(l, ords); renderDash(); gs.scrollLeft = sc;
+        ords.forEach(ord => { if (ord.rows.e === o.rows.e) saveOrderState(ord); });
+      }, 0);
+      return;
+    }
+
+    // Calcular máximo permitido:
+    // = logs de lotes que JÁ CHEGARAM (confirmado em ss, pronto em ss+tpSlots <= s)
+    //   menos logs já entregues noutros slots
+    // Um lote confirmado em slot ss só fica disponível em ss + tpSlots
+    // Usar ta (arrefecimento) para validar disponibilidade — pronto após ta, não tp
+    const logsArref = Object.entries(o.ls)
+      .filter(([ss, v]) => v.st === 'confirmed' && (+ss + getArrSlots(q, l, v._coolType)) <= s)
+      .reduce((sum, [, v]) => sum + (v.actualLogs || Math.floor((v.actualKgs||0)/(q.pw||10)) || v.vl || q.lt || 25), 0);
+    const logsJaEnt = Object.entries(o.rows.e)
+      .filter(([ss]) => +ss !== s)
+      .reduce((sum, [, v]) => sum + (+v || 0), 0);
+    const maxPermitido = Math.max(0, logsArref - logsJaEnt);
+
+    if (logsArref > 0 && newVal > maxPermitido) {
+      // Mostrar modal de erro com opção de forçar
+      showEntregaErro(inp, o, s, newVal, maxPermitido, col, l, ords);
+      // Reverter input para valor anterior
+      inp.value = o.rows.e[s] != null ? o.rows.e[s] : '';
+      return;
+    }
+
+    // Valor válido
+    o.rows.e[s] = newVal;
+    if (_t) clearTimeout(_t);
+    _t = setTimeout(() => {
+      const gs = document.getElementById('gscroll'); const sc = gs.scrollLeft;
+      buildKPIs(l, ords); renderDash(); gs.scrollLeft = sc;
+      ords.forEach(ord => { if (ord.rows.e === o.rows.e) saveOrderState(ord); });
+    }, 0);
+  };
+
+  inp.addEventListener('change', doUpdate);
+  inp.addEventListener('input', doUpdate);
+  return inp;
+}
+
+// Modal de erro para logs entregues inválidos
+function showEntregaErro(inp, o, s, valorTentado, maxPermitido, col, l, ords) {
+  const existing = document.getElementById('entregaErroModal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'entregaErroModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:6px;padding:24px 28px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.25);font-family:Barlow,sans-serif;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="font-size:22px">⚠️</span>
+        <div style="font-family:Barlow Condensed,sans-serif;font-size:15px;font-weight:800;color:#B64926;letter-spacing:.5px">LOGS ENTREGUES INVÁLIDO</div>
+      </div>
+      <div style="font-size:12px;color:#505046;line-height:1.6;margin-bottom:6px;">
+        Tentaste inserir <b>${valorTentado} logs</b> entregues.
+      </div>
+      <div style="font-size:12px;color:#505046;line-height:1.6;margin-bottom:16px;background:#FFF3F0;border:1px solid #E8C0B0;border-radius:3px;padding:8px 10px;">
+        Máximo permitido: <b>${maxPermitido} logs</b><br>
+        <span style="font-size:10px;color:#88887A;">(Logs prontos neste slot − logs já entregues)</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button id="entregaErroFechar" style="flex:1;padding:8px;border:1px solid var(--bd2);background:var(--sf2);border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">Fechar</button>
+        <button id="entregaErroForcar" style="flex:1;padding:8px;background:#B64926;color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;">⚡ Forçar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  document.getElementById('entregaErroFechar').addEventListener('click', () => modal.remove());
+  document.getElementById('entregaErroForcar').addEventListener('click', () => {
+    // Forçar o valor mesmo sendo inválido
+    o.rows.e[s] = valorTentado;
+    inp.value = valorTentado;
+    modal.remove();
+    const gs = document.getElementById('gscroll'); const sc = gs.scrollLeft;
+    buildKPIs(l, ords); renderDash(); gs.scrollLeft = sc;
+    ords.forEach(ord => { if (ord.rows.e === o.rows.e) saveOrderState(ord); });
+  });
+  modal.addEventListener('click', ev => { if (ev.target === modal) modal.remove(); });
+}
+
+// ═══════════════════════════════════════════════
+//  PAGE 3: DADOS
+//  Shows: (A) production tracking per line
+//         (B) Standard de Arrefecimento table
+//         (C) Consumos STD table
+// ═══════════════════════════════════════════════
+
+// Standard de Arrefecimento — full table from Excel
+const STD_ARREC = [
+  {pi:'1901152',desc:"SP3 PAIO YORK P/FAT MP",lt:25,tp:50,ta:45,pg:3},
+  {pi:'1901167',desc:"SP1 FIAMB P EXT P/FAT MP",lt:25,tp:50,ta:40,pg:3},
+  {pi:'1901169',desc:"SP1 FIAMB EXT SUC P/FAT",lt:25,tp:50,ta:40,pg:3},
+  {pi:'1901414',desc:"SP3 PEITO FRANGO P/FAT FL CF",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1901417',desc:"SP1 PEITO PERU CLASSICAS P/ FAT",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1901419',desc:"",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1901460',desc:"SP1 FIAMBRE FRANGO ECON P/FAT",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1901483',desc:"",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1901678',desc:"SP1 PEITO FRANGO CDT P/FAT",lt:27,tp:50,ta:30,pg:3},
+  {pi:'1902079',desc:"SP3 MORTAD PERU C/ AZEIT P/FAT",lt:25,tp:50,ta:45,pg:3},
+  {pi:'1902714',desc:"SP1 PEITO PERU EXTRA CLASSIC P/FATIAR",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1902829',desc:"CHOPPED PORK P/LONCHEAR D110 1500MM",lt:25,tp:50,ta:45,pg:3},
+  {pi:'1903048',desc:"SP1 FIAMB P EXT 11:11 P/FAT MP",lt:25,tp:50,ta:40,pg:3},
+  {pi:'1903661',desc:"SP3 PEITO PERU P/ FAT FL MP",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1903662',desc:"SP3 PEITO FRANGO P/FAT FL MP",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1904003',desc:"SP1 FIAMBRE PÁ P/FAT NB",lt:25,tp:50,ta:40,pg:3},
+  {pi:'1904004',desc:"SP1 FIAMBRE PÁ P/FAT MP",lt:25,tp:50,ta:40,pg:3},
+  {pi:'1904058',desc:"SP3 MORTAD C/AZEIT P/FAT ECON",lt:25,tp:50,ta:45,pg:3},
+  {pi:'1904059',desc:"MORTADELA P/ FATIAR  ECO",lt:25,tp:50,ta:45,pg:3},
+  {pi:'1904349',desc:"SP1 FIAMB P EXT P/FAT MERCADONA",lt:25,tp:50,ta:45,pg:3},
+  {pi:'1904621',desc:"SP1 FIAMB PÁ 11:11 P/FAT MP",lt:25,tp:50,ta:40,pg:3},
+  {pi:'1905045',desc:"SP3 VEGET CC VEGETAIS ASSADOS P/FAT",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1905050',desc:"SP3 VEGET CC LEGUMES P/FAT",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1905278',desc:"SP1 FIAMB P EXT P/FAT CTE",lt:25,tp:50,ta:45,pg:3},
+  {pi:'1905408',desc:"",lt:25,tp:50,ta:40,pg:3},
+  {pi:'1905643',desc:"SP1 FIAM PERN EXT P/FAT NB – BA",lt:25,tp:50,ta:40,pg:3},
+  {pi:'1905988',desc:"SP3 VEGET MEDITERRANEA P/FAT (B)",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1906009',desc:"",lt:30,tp:50,ta:30,pg:3},
+  {pi:'1906010',desc:"SP3 MORTAD PERU C/ AZEIT P/FAT (B)",lt:25,tp:50,ta:45,pg:3},
+  {pi:'1906343',desc:"SP1 FIAMB P EXT P/FAT CTE (17KG)",lt:25,tp:50,ta:45,pg:3},
+  {pi:'1906346',desc:"SP1 FIAMB P EXT P/FAT CTE (17KG)",lt:25,tp:55,ta:45,pg:4},
+  {pi:'1906709',desc:"SP3 VEGETARIANO TIPO FRANGO P/FAT",lt:25,tp:50,ta:25,pg:3},
+  {pi:'1907134',desc:"SP1 FIAMB PERNA EXTRA P/FAT CDT NB - BA",lt:25,tp:50,ta:40,pg:3},
+  {pi:'1907444',desc:"SP1 FIAMB P EXT FL P/FAT CF",lt:25,tp:50,ta:40,pg:3},
+  {pi:'1907457',desc:"SP3 SALSICHA P/FAT NB",lt:25,tp:50,ta:45,pg:3},
+  {pi:'1907588',desc:"SP1 FIAMBRE CORRENTE FS NB P/FAT",lt:25,tp:50,ta:40,pg:3},
+  {pi:'1907601',desc:"SP3 PEITO PERU P/ FAT FL CF (C/FRG)",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1907698',desc:"SP1 FIAMB PÁ P/FAT PDC",lt:25,tp:50,ta:40,pg:3},
+  {pi:'1907723',desc:"SP1 FIAMBRE PERU ECON P/FAT NB",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1907726',desc:"SP1 PEITO PERU EXTRA CLASSI P/FAT (CFRG)",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1907733',desc:"SP1 PEITO PERU CLASSICAS P/ FAT (CFRG)",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1907738',desc:"SP3 PEITO PERU P/ FAT CDT NB (CFRG)",lt:25,tp:50,ta:30,pg:3},
+  {pi:'1907760',desc:"SP1 PEITO PERU BRASEADO CDT P/ FAT NB",lt:25,tp:50,ta:30,pg:3}
+];
+
+// Consumos STD — key columns from Excel
+const STD_CONS = [
+  {cod:'18122',pi:'1901156',desc:"SP3 CHOURIÇÃO P/FAT MP",pw:6.5,linha:'Fumados'},
+  {cod:'18422',pi:'1901164',desc:"SP3 CHOURIÇÃO P/FAT ECON",pw:8.0,linha:'Fumados'},
+  {cod:'28668',pi:'1901164',desc:"SP3 CHOURIÇÃO P/FAT ECON",pw:8.0,linha:'Fumados'},
+  {cod:'18386',pi:'1901414',desc:"SP3 PEITO FRANGO P/FAT FL CF",pw:9.2,linha:'Fumados'},
+  {cod:'22788',pi:'1901460',desc:"SP1 FIAMBRE FRANGO ECON P/FAT",pw:9.0,linha:'Fumados'},
+  {cod:'28689',pi:'1901460',desc:"SP1 FIAMBRE FRANGO ECON P/FAT",pw:9.0,linha:'Fumados'},
+  {cod:'18312',pi:'1907601',desc:"SP3 PEITO PERU P/ FAT FL CF (C/FRG)",pw:9.2,linha:'Fumados'},
+  {cod:'27566',pi:'1901417',desc:"SP1 PEITO PERU CLASSICAS P/ FAT",pw:9.0,linha:'Fumados'},
+  {cod:'18357',pi:'1901419',desc:"SP1 PEITO PERU ECON P/FAT NB",pw:9.0,linha:'Fumados'},
+  {cod:'18384',pi:'1907601',desc:"SP3 PEITO PERU P/ FAT FL CF (C/FRG)",pw:9.2,linha:'Fumados'},
+  {cod:'18121',pi:'1904004',desc:"SP1 FIAMBRE PÁ P/FAT MP",pw:18.0,linha:'Fumados'},
+  {cod:'27553',pi:'1904004',desc:"SP1 FIAMBRE PÁ P/FAT MP",pw:18.0,linha:'Fumados'},
+  {cod:'18354',pi:'1901169',desc:"SP1 FIAMB EXT SUC P/FAT",pw:12.0,linha:'Fumados'},
+  {cod:'18420',pi:'1904003',desc:"SP1 FIAMBRE PÁ P/FAT NB",pw:18.0,linha:'Fumados'},
+  {cod:'28667',pi:'1901169',desc:"SP1 FIAMB EXT SUC P/FAT",pw:12.0,linha:'Fumados'},
+  {cod:'18125',pi:'1901167',desc:"SP1 FIAMB P EXT P/FAT MP",pw:18.0,linha:'Fumados'},
+  {cod:'28418',pi:'1903048',desc:"SP1 FIAMB P EXT 11:11 P/FAT MP",pw:12,linha:'Fumados'},
+  {cod:'37852',pi:'1903048',desc:"SP1 FIAMB P EXT 11:11 P/FAT MP",pw:12,linha:'Fumados'},
+  {cod:'18419',pi:'1905643',desc:"SP1 FIAM PERN EXT P/FAT NB - BA",pw:17.0,linha:'Fumados'},
+  {cod:'35430',pi:'1905643',desc:"SP1 FIAM PERN EXT P/FAT NB - BA",pw:17.0,linha:'Fumados'},
+  {cod:'35920',pi:'1905050',desc:"SP3 VEGET CC LEGUMES P/FAT",pw:5.7,linha:'Fumados'},
+  {cod:'35931',pi:'1905988',desc:"SP3 VEGET MEDITERRANEA P/FAT (B)",pw:5.7,linha:'Fumados'},
+  {cod:'35932',pi:'1905045',desc:"SP3 VEGET CC VEGETAIS ASSADOS P/FAT",pw:5.7,linha:'Fumados'},
+  {cod:'26068',pi:'1906009',desc:"SP3 MORTAD PERU P/FAT (B)",pw:9.3,linha:'Fumados'},
+  {cod:'26069',pi:'1906010',desc:"SP3 MORTAD PERU C/ AZEIT P/FAT (B)",pw:9.3,linha:'Fumados'},
+  {cod:'18764',pi:'1904059',desc:"SP3 MORTAD P/FAT ECON",pw:9.3,linha:'Fumados'},
+  {cod:'30791',pi:'1904058',desc:"SP3 MORTAD C/AZEIT P/FAT ECON",pw:9.3,linha:'Fumados'},
+  {cod:'25456',pi:'1901152',desc:"SP3 PAIO YORK P/FAT MP",pw:12.5,linha:'Fumados'},
+  {cod:'25665',pi:'1902009',desc:"SP3 PAIO DO LOMBO P/FATIAR",pw:3.7,linha:'Fumados'},
+  {cod:'33523',pi:'1901152',desc:"SP3 PAIO YORK P/FAT MP",pw:12.5,linha:'Fumados'},
+  {cod:'18117',pi:'1901158',desc:"SP3 CHOURIÇÃO P/FAT FSR NB",pw:6.5,linha:'Fumados'},
+  {cod:'18429',pi:'1901414',desc:"SP3 PEITO FRANGO P/FAT FL CF",pw:9.2,linha:'Fumados'},
+  {cod:'24378',pi:'1901678',desc:"SP1 PEITO FRANGO CDT P/FAT",pw:9.0,linha:'Fumados'},
+  {cod:'37046',pi:'1901460',desc:"SP1 FIAMBRE FRANGO ECON P/FAT",pw:9.0,linha:'Fumados'},
+  {cod:'18423',pi:'1901419',desc:"SP1 PEITO PERU ECON P/FAT NB",pw:9.0,linha:'Fumados'},
+  {cod:'18430',pi:'1907601',desc:"SP3 PEITO PERU P/ FAT FL CF (C/FRG)",pw:9.2,linha:'Fumados'},
+  {cod:'22545',pi:'1907738',desc:"SP3 PEITO PERU P/ FAT CDT NB (CFRG)",pw:9.2,linha:'Fumados'},
+  {cod:'22546',pi:'1907760',desc:"SP1 PEITO PERU BRASEADO CDT P/ FAT NB",pw:9.0,linha:'Fumados'},
+  {cod:'27618',pi:'1907726',desc:"SP1 PEITO PERU EXTRA CLASSI P/FAT (CFRG)",pw:9,linha:'Fumados'},
+  {cod:'28690',pi:'1907723',desc:"SP1 FIAMBRE PERU ECON P/FAT NB",pw:9.0,linha:'Fumados'},
+  {cod:'37045',pi:'1907723',desc:"SP1 FIAMBRE PERU ECON P/FAT NB",pw:9.0,linha:'Fumados'},
+  {cod:'18421',pi:'1901169',desc:"SP1 FIAMB EXT SUC P/FAT",pw:12.0,linha:'Fumados'},
+  {cod:'28666',pi:'1901169',desc:"SP1 FIAMB EXT SUC P/FAT",pw:12.0,linha:'Fumados'},
+  {cod:'37041',pi:'1901169',desc:"SP1 FIAMB EXT SUC P/FAT",pw:12.0,linha:'Fumados'},
+  {cod:'18418',pi:'1905643',desc:"SP1 FIAM PERN EXT P/FAT NB - BA",pw:17.0,linha:'Fumados'},
+  {cod:'22544',pi:'1907134',desc:"SP1 FIAMB PERNA EXTRA P/FAT CDT NB - BA",pw:17.0,linha:'Fumados'},
+  {cod:'35429',pi:'1905643',desc:"SP1 FIAM PERN EXT P/FAT NB - BA",pw:17.0,linha:'Fumados'},
+  {cod:'35537',pi:'1907179',desc:"SP1 FIAM PERN EXT BRAS P/FAT NB BA",pw:9.4,linha:'Fumados'},
+  {cod:'18408',pi:'1901156',desc:"SP3 CHOURIÇÃO P/FAT MP",pw:6.5,linha:'Fumados'},
+  {cod:'18348',pi:'1901156',desc:"SP3 CHOURIÇÃO P/FAT MP",pw:6.5,linha:'Fumados'},
+  {cod:'33619',pi:'1901417',desc:"SP1 PEITO PERU CLASSICAS P/ FAT",pw:9.0,linha:'Fumados'},
+  {cod:'33620',pi:'1903661',desc:"SP3 PEITO PERU P/ FAT FL MP",pw:9.2,linha:'Fumados'},
+  {cod:'18406',pi:'1904004',desc:"SP1 FIAMBRE PÁ P/FAT MP",pw:18.0,linha:'Fumados'},
+  {cod:'18347',pi:'1904004',desc:"SP1 FIAMBRE PÁ P/FAT MP",pw:18.0,linha:'Fumados'},
+  {cod:'32745',pi:'1906009',desc:"SP3 MORTAD PERU P/FAT (B)",pw:9.3,linha:'Fumados'},
+  {cod:'39724',pi:'1906010',desc:"SP3 MORTAD PERU C/ AZEIT P/FAT (B)",pw:9.3,linha:'Fumados'},
+  {cod:'39343',pi:'1906010',desc:"SP3 MORTAD PERU C/ AZEIT P/FAT (B)",pw:9.3,linha:'Fumados'},
+  {cod:'29367',pi:'1901152',desc:"SP3 PAIO YORK P/FAT MP",pw:12.5,linha:'Fumados'},
+  {cod:'30215',pi:'1903662',desc:"SP3 PEITO FRANGO P/FAT FL MP",pw:9.2,linha:'Fumados'},
+  {cod:'39856',pi:'1901167',desc:"SP1 FIAMB P EXT P/FAT MP",pw:18.0,linha:'Fumados'},
+  {cod:'30216',pi:'1903661',desc:"SP3 PEITO PERU P/ FAT FL MP",pw:9.2,linha:'Fumados'},
+  {cod:'33359',pi:'1904004',desc:"SP1 FIAMBRE PÁ P/FAT MP",pw:18.0,linha:'Fumados'},
+  {cod:'38095',pi:'1902829',desc:"CHOPPED PORK P/LONCHEAR D110 1500MM",pw:14,linha:'Fumados'},
+  {cod:'39336',pi:'1904004',desc:"SP1 FIAMBRE PÁ P/FAT MP",pw:18.0,linha:'Fumados'},
+  {cod:'40329',pi:'1904002',desc:"SP1 FIAM PERN EXT P/FAT NB",pw:17.0,linha:'Fumados'},
+  {cod:'33351',pi:'1905278',desc:"SP1 FIAMB P EXT P/FAT CTE",pw:18.0,linha:'Fumados'},
+  {cod:'33352',pi:'1905278',desc:"SP1 FIAMB P EXT P/FAT CTE",pw:18.0,linha:'Fumados'},
+  {cod:'39335',pi:'1901167',desc:"SP1 FIAMB P EXT P/FAT MP",pw:18.0,linha:'Fumados'},
+  {cod:'27894',pi:'1905988',desc:"SP3 VEGET MEDITERRANEA P/FAT (B)",pw:5.7,linha:'Fumados'},
+  {cod:'35690',pi:'1905045',desc:"SP3 VEGET CC VEGETAIS ASSADOS P/FAT",pw:5.7,linha:'Fumados'},
+  {cod:'35696',pi:'1905050',desc:"SP3 VEGET CC LEGUMES P/FAT",pw:5.7,linha:'Fumados'},
+  {cod:'36162',pi:'1905278',desc:"SP1 FIAMB P EXT P/FAT CTE",pw:18.0,linha:'Fumados'},
+  {cod:'36161',pi:'1904004',desc:"SP1 FIAMBRE PÁ P/FAT MP",pw:18.0,linha:'Fumados'},
+  {cod:'39931',pi:'1906709',desc:"SP3 VEGETARIANO TIPO FRANGO P/FAT",pw:5.7,linha:'Fumados'},
+  {cod:'39942',pi:'1906709',desc:"SP3 VEGETARIANO TIPO FRANGO P/FAT",pw:5.7,linha:'Fumados'},
+  {cod:'36430',pi:'1903662',desc:"SP3 PEITO FRANGO P/FAT FL MP",pw:9.2,linha:'Fumados'},
+  {cod:'39337',pi:'1901167',desc:"SP1 FIAMB P EXT P/FAT MP",pw:18.0,linha:'Fumados'},
+  {cod:'40515',pi:'1907134',desc:"SP1 FIAMB PERNA EXTRA P/FAT CDT NB - BA",pw:17.0,linha:'Fumados'},
+  {cod:'40230',pi:'1901158',desc:"SP3 CHOURIÇÃO P/FAT FSR NB",pw:6.5,linha:'Fumados'},
+  {cod:'40231',pi:'1901152',desc:"SP3 PAIO YORK P/FAT MP",pw:12.5,linha:'Fumados'},
+  {cod:'40704',pi:'1903048',desc:"SP1 FIAMB P EXT 11:11 P/FAT MP",pw:12,linha:'Fumados'},
+  {cod:'40702',pi:'1906944',desc:"SP3 PEITO PERU CEN P/FAT NB CDT",pw:8.6,linha:'Fumados'},
+  {cod:'41420',pi:'1907601',desc:"SP3 PEITO PERU P/ FAT FL CF (C/FRG)",pw:9.2,linha:'Fumados'},
+  {cod:'41431',pi:'1901414',desc:"SP3 PEITO FRANGO P/FAT FL CF",pw:9.2,linha:'Fumados'},
+  {cod:'41213',pi:'1901149',desc:"SP3 BACON S/C P/FAT FSR",pw:9,linha:'Fumados'},
+  {cod:'41680',pi:'1904349',desc:"SP1 FIAMB P EXT P/FAT MERCADONA",pw:18.0,linha:'Fumados'},
+  {cod:'41747',pi:'1901157',desc:"SP3 CHOURIÇÃO P/FAT NB",pw:6.5,linha:'Fumados'},
+  {cod:'41748',pi:'1901152',desc:"SP3 PAIO YORK P/FAT MP",pw:12.5,linha:'Fumados'},
+  {cod:'41744',pi:'1907457',desc:"SP3 SALSICHA P/FAT NB",pw:9.2,linha:'Fumados'},
+  {cod:'41839',pi:'1905643',desc:"SP1 FIAM PERN EXT P/FAT NB - BA",pw:17.0,linha:'Fumados'},
+  {cod:'41838',pi:'1907134',desc:"SP1 FIAMB PERNA EXTRA P/FAT CDT NB - BA",pw:17.0,linha:'Fumados'},
+  {cod:'41837',pi:'1901169',desc:"SP1 FIAMB EXT SUC P/FAT",pw:12.0,linha:'Fumados'},
+  {cod:'41836',pi:'1904003',desc:"SP1 FIAMBRE PÁ P/FAT NB",pw:18.0,linha:'Fumados'},
+  {cod:'41835',pi:'1905643',desc:"SP1 FIAM PERN EXT P/FAT NB - BA",pw:17.0,linha:'Fumados'},
+  {cod:'41843',pi:'1905643',desc:"SP1 FIAM PERN EXT P/FAT NB - BA",pw:17.0,linha:'Fumados'},
+  {cod:'41844',pi:'1905643',desc:"SP1 FIAM PERN EXT P/FAT NB - BA",pw:17.0,linha:'Fumados'},
+  {cod:'41845',pi:'1907601',desc:"SP3 PEITO PERU P/ FAT FL CF (C/FRG)",pw:9.2,linha:'Fumados'},
+  {cod:'41846',pi:'1901414',desc:"SP3 PEITO FRANGO P/FAT FL CF",pw:9.2,linha:'Fumados'},
+  {cod:'41751',pi:'1907444',desc:"SP1 FIAMB P EXT FL P/FAT CF",pw:9.0,linha:'Fumados'}
+];
+
+function renderDados(){
+  const PG_COLORS = {1:'#E8F4D8',2:'#D8EEF5',3:'#F5EAD8',4:'#FFF5CC',5:'#F8D8D8',6:'#D8F0E8'};
+  const PG_TC     = {1:'#3A7010',2:'#1A5880',3:'#7A4010',4:'#7A5A00',5:'#7A1010',6:'#1A7040'};
+
+  let html = '<div style="display:flex;flex-direction:column;gap:16px;">';
+
+  // ── A. Production tracking per line ──
+  html += '<div class="dc"><div class="dch">Dados de Producao por Linha</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px">';
+  [1,2,3,4,5,6].forEach(l => {
+    const ords = S.plan[l];
+    html += '<div style="border:1px solid var(--bd);border-radius:3px;overflow:hidden;">';
+    html += '<div style="background:var(--sf2);border-bottom:1px solid var(--bd);padding:5px 10px;font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:13px;color:var(--red)">Linha '+l+'</div>';
+    html += '<table class="dtbl"><thead><tr><th>Ordem</th><th>PI</th><th>Desc.</th><th>Prog.</th><th>KGs</th><th>Logs</th><th>Desinf.KG</th><th>Arrec.L</th><th>Entregues</th></tr></thead><tbody>';
+    if(!ords.length) html += '<tr><td colspan="9" style="text-align:center;color:var(--mu);padding:10px">Sem ordens</td></tr>';
+    ords.forEach((o,i)=>{
+      const q=pr(o.pi,o.sku), logs=cLogs(o);
+      const tD=sumO(o.rows.d), tA=q.pw?Math.floor(sumO(o.rows.a)/q.pw):0, tE=sumO(o.rows.e);
+      const pA=logs?Math.min(100,Math.round(tA/logs*100)):0, pE=logs?Math.min(100,Math.round(tE/logs*100)):0;
+      html += '<tr><td style="font-weight:700;color:var(--mu)">'+esc(o.ordem||String(i+1))+'</td>';
+      html += '<td style="color:#1A5880;font-weight:700;font-size:10px">'+esc(o.pi)+'</td>';
+      html += '<td style="font-size:10px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(dsc(o.pi,o.sku))+'">'+esc(dsc(o.pi,o.sku))+'</td>';
+      html += '<td><span class="ptag '+(PC[q.pg]||'p3')+'">'+(PL[q.pg]||'--')+'</span></td>';
+      html += '<td style="text-align:right;font-weight:600">'+((o.kgs||0).toLocaleString('pt-PT'))+'</td>';
+      html += '<td style="text-align:right;font-weight:600">'+(logs||'--')+'</td>';
+      html += '<td><input class="dinp" type="number" min="0" value="'+(tD||'')+'" placeholder="0" style="color:#1A5880" oninput="S.plan['+l+']['+i+'].rows.d={0:+this.value};renderDados()"></td>';
+      html += '<td><input class="dinp" type="number" min="0" value="'+(tA||'')+'" placeholder="0" style="color:#2A8A50" oninput="S.plan['+l+']['+i+'].rows.a={0:+this.value*'+(q.pw||1)+'};renderDados()">';
+      html += '<div class="bw"><div class="bf" style="width:'+pA+'%;background:#2A8A50"></div></div></td>';
+      html += '<td><input class="dinp" type="number" min="0" value="'+(tE||'')+'" placeholder="0" style="color:var(--gld)" oninput="S.plan['+l+']['+i+'].rows.e={0:+this.value};renderDados()">';
+      html += '<div class="bw"><div class="bf" style="width:'+pE+'%;background:var(--gld)"></div></div></td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  html += '</div></div>';
+
+  // ── B. Standards de Arrefecimento + Consumos por SKU (Excel) ──────────
+  html += '<div class="dc"><div class="dch">Standards de Arrefecimento e Consumos por SKU</div>';
+  html += '<div style="overflow-x:auto"><table class="dtbl" style="min-width:900px;font-size:11px"><thead><tr>';
+  html += '<th style="text-align:center">SKU</th>';
+  html += '<th>Descrição</th>';
+  html += '<th style="text-align:center">PI</th>';
+  html += '<th style="text-align:center">Tipo</th>';
+  html += '<th style="text-align:center">Temp. (°C)</th>';
+  html += '<th style="text-align:center;color:var(--red)">Tempo Arr. Mecânico (min)</th>';
+  html += '<th style="text-align:center;color:#1A5880">Tempo Arr. Azoto (min)</th>';
+  html += '<th style="text-align:center">L1<br><small>kg/h</small></th>';
+  html += '<th style="text-align:center">L2<br><small>kg/h</small></th>';
+  html += '<th style="text-align:center">L3<br><small>kg/h</small></th>';
+  html += '<th style="text-align:center">L4<br><small>kg/h</small></th>';
+  html += '<th style="text-align:center">L5<br><small>kg/h</small></th>';
+  html += '<th style="text-align:center">L6<br><small>kg/h</small></th>';
+  html += '</tr></thead><tbody>';
+
+  SKU_TABLE.forEach((r, ri) => {
+    const hasData = r.tempo > 0 || Object.keys(r.lines).length > 0;
+    if (!hasData) return;
+    const rowBg = r.no_cold ? 'background:#f9f9f9;color:#aaa' : '';
+    const tempColor = !r.no_cold && r.tempo > 0 ? 'font-weight:700;color:var(--red)' : 'color:var(--mu)';
+    html += '<tr style="'+rowBg+'">';
+    html += '<td style="text-align:center;font-weight:700;color:var(--blu)">'+r.sku+'</td>';
+    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(r.desc)+'">'+esc(r.desc)+'</td>';
+    html += '<td style="text-align:center;font-size:10px;color:#1A5880">'+esc(r.pi)+'</td>';
+    html += '<td style="text-align:center;font-size:10px">'+esc(r.tipo||r.nota||'—')+'</td>';
+    html += '<td style="text-align:center">'+(r.temp!=null?r.temp+'°C':'—')+'</td>';
+    // Tempo Arr — editável (só se não é no_cold)
+    if (r.no_cold) {
+      html += '<td style="text-align:center;color:var(--mu)">Não vai ao frio</td>';
+    } else {
+      html += '<td style="text-align:center;padding:0"><input type="number" min="0" step="5"'
+           +' value="'+(r.tempo>0?r.tempo:'')+'"'
+           +' placeholder="—"'
+           +' title="Tempo de arrefecimento (min)"'
+           +' style="width:64px;text-align:center;font-weight:700;color:var(--red);background:transparent;border:1px solid transparent;border-radius:3px;padding:2px 4px;font-size:11px;font-family:inherit;outline:none;cursor:pointer;"'
+           +' onfocus="this.style.borderColor=\'var(--red)\';this.style.background=\'#FFF9F5\'"'
+           +' onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'"'
+           +' oninput="(function(el,i){var v=+el.value||0;SKU_TABLE[i].tempo=v;'
+           // Also sync to STD_SKU ta for matching SKUs
+           +'var skuStr=String(SKU_TABLE[i].sku);if(STD_SKU[skuStr])STD_SKU[skuStr].ta=v;'
+           // Also sync to DB ta if pi matches
+           +'var pi=SKU_TABLE[i].pi;if(pi&&DB[pi])DB[pi].ta=v;'
+           +'})(this,'+ri+')"'
+           +' onclick="event.stopPropagation()">'
+           +'</td>';
+    }
+    // Tempo Arrefecimento Azoto (read-only, from DB.tn)
+    { const piDb = DB[r.pi]; const tn = piDb ? piDb.tn : null;
+      html += '<td style="text-align:center;color:#1A5880;font-weight:700">' + (tn ? tn+'<span style=\'font-size:9px;font-weight:400;color:var(--mu)\'>min</span>' : '<span style=\'color:var(--mu)\'>—</span>') + '</td>'; }
+    // Consumos por linha — editáveis
+    [1,2,3,4,5,6].forEach(ln => {
+      const v = r.lines[String(ln)];
+      html += '<td style="text-align:center;padding:0">'
+           +'<input type="number" min="0" step="1"'
+           +' value="'+(v!=null?Math.round(v):'')+'"'
+           +' placeholder=""'
+           +' title="Consumo L'+ln+' (kg/h)"'
+           +' style="width:54px;text-align:center;color:var(--mu);background:transparent;border:1px solid transparent;border-radius:3px;padding:2px 4px;font-size:11px;font-family:inherit;outline:none;cursor:pointer;"'
+           +' onfocus="this.style.borderColor=\'var(--bd2)\';this.style.background=\'#F5F3EB\'"'
+           +' onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'"'
+           +' oninput="(function(el,i,ln){var v=el.value===\'\'?undefined:+el.value;if(v==null||isNaN(v)){delete SKU_TABLE[i].lines[String(ln)];}else{SKU_TABLE[i].lines[String(ln)]=v;}'
+           // Sync to STD_LH if matching sku
+           +'var skuStr=String(SKU_TABLE[i].sku);if(STD_LH[skuStr])STD_LH[skuStr][\'l\'+ln]=v;'
+           +'})(this,'+ri+','+ln+')"'
+           +' onclick="event.stopPropagation()">'
+           +'</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div></div>';
+
+  // ── C. Tabela KGs por Log (pw) por SKU ──────────────────────────────────
+  html += '<div class="dc"><div class="dch">Peso por Log (kg/log) por SKU</div>';
+  html += '<div style="font-size:11px;color:var(--mu);margin-bottom:8px">Conversão entre logs e kg para cada SKU. Usado no cálculo de quantidades a arrefecer.</div>';
+  html += '<div style="overflow-x:auto"><table class="dtbl" style="min-width:500px;font-size:11px"><thead><tr>';
+  html += '<th style="text-align:center">SKU</th>';
+  html += '<th>Descrição</th>';
+  html += '<th style="text-align:center">PI</th>';
+  html += '<th style="text-align:center;color:var(--red)">kg / log</th>';
+  html += '<th style="text-align:center">Lote std (logs)</th>';
+  html += '<th style="text-align:center">Lote std (kg)</th>';
+  html += '</tr></thead><tbody>';
+
+  // Build from STD_LH (has pw per PI) merged with STD_SKU (has SKU→PI)
+  // Group by PI to avoid duplicates, show all SKUs
+  const pwRows = [];
+  // From STD_SKU: each SKU maps to PI, use DB[pi].pw
+  Object.entries(STD_SKU).forEach(([sku, sv]) => {
+    const pi = sv.pi;
+    const base = DB[pi] || {};
+    const pw_val = base.pw || null;
+    const lote_val = sv.lt || base.lt || 25;
+    const desc = base.d || dsc(pi, +sku);
+    if (pw_val) {
+      pwRows.push({ sku: +sku, pi, desc, pw: pw_val, lote: lote_val });
+    }
+  });
+  // Also add from STD_LH entries that have pw
+  Object.entries(STD_LH || {}).forEach(([sku, lhData]) => {
+    if (!STD_SKU[sku]) {
+      const pi = (DB && Object.keys(DB).find(p => (DB[p].lt||0) > 0)) || '';
+      // skip if no PI known
+    }
+  });
+
+  // Sort by SKU
+  pwRows.sort((a,b) => a.sku - b.sku);
+  // Deduplicate by SKU
+  const seen = new Set();
+  pwRows.forEach(r => {
+    if (seen.has(r.sku)) return; seen.add(r.sku);
+    html += '<tr>';
+    html += '<td style="text-align:center;font-weight:700;color:var(--blu)">' + r.sku + '</td>';
+    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(r.desc) + '">' + esc(r.desc) + '</td>';
+    html += '<td style="text-align:center;font-size:10px;color:#1A5880">' + esc(r.pi) + '</td>';
+    html += '<td style="text-align:center;font-weight:700;color:var(--red)">' + r.pw.toFixed(2) + '</td>';
+    html += '<td style="text-align:center">' + r.lote + '</td>';
+    html += '<td style="text-align:center;color:var(--mu)">' + Math.round(r.lote * r.pw) + ' kg</td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+
+  html += '</div>';
+  document.getElementById('dg').innerHTML = html;
+}
+// ═══════════════════════════════════════════════
+//  TOOLTIP
+// ═══════════════════════════════════════════════
+function tipShow(e,msg){const t=document.getElementById('tip');t.textContent=msg;t.classList.add('on');t.style.left=(e.clientX+12)+'px';t.style.top=(e.clientY-28)+'px';}
+function tipHide(){document.getElementById('tip').classList.remove('on');}
+document.addEventListener('mousemove',e=>{const t=document.getElementById('tip');if(t.classList.contains('on')){t.style.left=(e.clientX+12)+'px';t.style.top=(e.clientY-28)+'px';}});
+
+// ═══════════════════════════════════════════════
+//  GESTÃO DE PAUSAS
+// ═══════════════════════════════════════════════
+function s2tStr(s){const h=Math.floor(s/6),m=(s%6)*10;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
+
+function getPausaBlocks(l){
+  const slots=[...S.pausas[l]].sort((a,b)=>a-b);
+  const blocks=[];let i=0;
+  while(i<slots.length){
+    let start=slots[i],end=slots[i];
+    while(i+1<slots.length&&slots[i+1]===slots[i]+1){i++;end=slots[i];}
+    blocks.push({start,end:end+1});i++;
+  }
+  return blocks;
+}
+
+function addPausa(){
+  const linhaVal=+document.getElementById('pausaLinha').value;
+  const startStr=document.getElementById('pausaStart').value;
+  const endStr=document.getElementById('pausaEnd').value;
+  if(!startStr||!endStr){alert('Introduz hora de início e fim.');return;}
+  const sStart=t2s(startStr),sEnd=t2s(endStr);
+  if(sEnd<=sStart){alert('Fim tem de ser depois do início.');return;}
+  if((+endStr.split(':')[1]||0)%10!==0||(+startStr.split(':')[1]||0)%10!==0){alert('Usa minutos múltiplos de 10.');return;}
+  const linhas=linhaVal===0?[1,2,3,4,5,6]:[linhaVal];
+  linhas.forEach(l=>{for(let s=sStart;s<sEnd;s++)S.pausas[l].add(s);});
+  renderPausas();renderDash();pushState();savePausasToSupabase();
+}
+
+function removePausa(sStart,sEnd,linhaVal){
+  const linhas=linhaVal===0?[1,2,3,4,5,6]:[linhaVal];
+  linhas.forEach(l=>{for(let s=sStart;s<sEnd;s++)S.pausas[l].delete(s);});
+  renderPausas();renderDash();pushState();savePausasToSupabase();
+}
+
+function resetPausas(){
+  if(!confirm('Repor as pausas padrão?'))return;
+  [1,2,3,4,5,6].forEach(l=>S.pausas[l]=new Set(DEF_PAU));
+  renderPausas();renderDash();pushState();savePausasToSupabase();
+}
+
+// ── Guardar pausas no Supabase ──
+async function savePausasToSupabase() {
+  if (typeof _supa === 'undefined') return;
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    // delete+insert é mais fiável que upsert em bulk com RLS
+    await _supa.from('pausas').delete().eq('plan_date', today);
+    const rows = [1,2,3,4,5,6].map(l => ({
+      plan_date: today,
+      linha: l,
+      slots: [...S.pausas[l]],
+    }));
+    const { error } = await _supa.from('pausas').insert(rows);
+    if (error) console.warn('savePausasToSupabase error:', error);
+  } catch(e) { console.warn('savePausasToSupabase failed:', e); }
+}
+
+// ── Carregar pausas do Supabase ──
+async function loadPausasFromSupabase() {
+  if (typeof _supa === 'undefined') return;
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const { data } = await _supa.from('pausas').select('linha,slots').eq('plan_date', today);
+    if (!data || !data.length) return;
+    data.forEach(r => {
+      if (r.slots && Array.isArray(r.slots)) {
+        S.pausas[r.linha] = new Set(r.slots.map(Number));
+      }
+    });
+  } catch(e) { console.warn('loadPausasFromSupabase failed:', e); }
+}
+
+function renderPausas(){
+  const el=document.getElementById('pausaList');if(!el)return;
+  let html='';
+  [1,2,3,4,5,6].forEach(l=>{
+    const blocks=getPausaBlocks(l);if(!blocks.length)return;
+    html+='<div style="margin-bottom:12px">';
+    html+='<div style="font-family:Barlow Condensed,sans-serif;font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px">Linha '+l+'</div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    blocks.forEach(b=>{
+      const label=s2tStr(b.start)+' – '+s2tStr(b.end);
+      html+='<div style="display:flex;align-items:center;gap:6px;background:var(--sau);border:1px solid #B0A880;border-radius:3px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--tx2)">';
+      html+=label+'<span onclick="removePausa('+b.start+','+b.end+','+l+')" style="cursor:pointer;color:var(--sr-b);font-weight:700;margin-left:4px">✕</span></div>';
+    });
+    html+='</div></div>';
+  });
+  if(!html)html='<div style="font-size:12px;color:var(--mu)">Nenhuma pausa definida.</div>';
+  el.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════
+//  PERSISTÊNCIA LOCAL — localStorage
+// ═══════════════════════════════════════════════
+const LS_KEY = 'nobre_planeador_state_v2';  // v2: ignora cache antiga (que tinha o seed da L3)
+
+function serializeState() {
+  const pausas = {};
+  [1,2,3,4,5,6].forEach(l => { pausas[l] = [...S.pausas[l]]; });
+  return JSON.stringify({ plan: S.plan, pausas, curL: S.curL });
+}
+
+function deserializeState(d) {
+  try {
+    if (typeof d === 'string') d = JSON.parse(d);
+    if (d.plan) {
+      [1,2,3,4,5,6].forEach(l => {
+        if (d.plan[l]) S.plan[l] = d.plan[l].map(o => ({
+          ...o, sku: o.sku||'', rows: o.rows||{d:{},a:{},e:{}}, ls: o.ls||{}
+        }));
+      });
+    }
+    if (d.pausas) {
+      [1,2,3,4,5,6].forEach(l => {
+        if (d.pausas[l]) S.pausas[l] = new Set(d.pausas[l].map(Number));
+      });
+    }
+    return true;
+  } catch(e) { return false; }
+}
+
+function pushState() {
+  try { localStorage.setItem(LS_KEY, serializeState()); } catch(e) {}
+}
+
+// Wrap renderPlan to auto-guardar no localStorage (Supabase só no load do Excel)
+const _renderPlanOrig = renderPlan;
+renderPlan = function() { _renderPlanOrig(); pushState(); };
+// renderDash does NOT auto-push state (prevents constant localStorage writes on each render)
+
+// ── Limpar tudo ──
+async function clearState() {
+  if (!confirm('Limpar todos os dados? Esta ação não pode ser desfeita.')) return;
+  [1,2,3,4,5,6].forEach(l => { S.plan[l]=[]; S.pausas[l]=new Set(DEF_PAU); });
+  S.curL = 3;
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  // Apagar também o plano de hoje no Supabase (cascade remove ordens + estados)
+  try {
+    if (_userRole === 'manager' && typeof _supa !== 'undefined') {
+      const today = new Date().toISOString().slice(0,10);
+      await _supa.from('daily_plans').delete().eq('plan_date', today);
+    }
+  } catch(e) {}
+  document.getElementById('upz').style.display = '';
+  renderPlan(); renderDash();
+}
+
+// ── Guardar HTML (snapshot offline) ──
+function saveHTML() {
+  const src = document.documentElement.outerHTML;
+  const blob = new Blob([src], {type:'text/html;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const now  = new Date();
+  const stamp = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
+  a.href = url; a.download = 'planeador_nobre_'+stamp+'.html';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════
+//  SUPABASE + AUTH
+// ═══════════════════════════════════════════════
+const SUPA_URL  = 'https://xpsowbirkzetzlkaetab.supabase.co';
+const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhwc293Ymlya3pldHpsa2FldGFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0OTk3MjEsImV4cCI6MjA5NDA3NTcyMX0.qP_v8pW7HqRIyQth49ta_OtRfOzxE6m-eh_63KLKzac';
+const _supa     = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let _userRole = null;
+let _userName = null;
+let _realtimeCh = null;
+
+async function doLogin() {
+  const email = document.getElementById('lemail').value.trim();
+  const pass  = document.getElementById('lpass').value;
+  const btn   = document.getElementById('lbtn');
+  const err   = document.getElementById('lerr');
+  err.classList.remove('on');
+  btn.disabled = true; btn.textContent = 'A entrar...';
+  const { error } = await _supa.auth.signInWithPassword({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'Entrar';
+  if (error) { err.classList.add('on'); }
+}
+
+async function doSignOut() {
+  try { if (_presenceCh) { _presenceCh.untrack(); _supa.removeChannel(_presenceCh); } } catch(e){}
+  await _supa.auth.signOut();
+  location.reload();
+}
+
+// ── PRESENÇA: quantas pessoas têm o dashboard aberto agora ──────────────
+//  Usa o Supabase Realtime Presence (em memória, sem tabela). Cada browser
+//  anuncia-se ao entrar e desaparece sozinho ao fechar/perder ligação.
+let _presenceCh = null;
+function startPresence(user) {
+  if (_presenceCh) { try { _supa.removeChannel(_presenceCh); } catch(e){} _presenceCh = null; }
+  const ch = _supa.channel('presenca-dashboard', { config: { presence: { key: user.id } } });
+  _presenceCh = ch;
+  const refresh = () => {
+    const state = ch.presenceState();           // { userId: [meta, ...], ... }
+    const n = Object.keys(state).length;          // nº de utilizadores distintos
+    updatePresenceUI(n);
+  };
+  ch.on('presence', { event: 'sync' },  refresh);
+  ch.on('presence', { event: 'join' },  refresh);
+  ch.on('presence', { event: 'leave' }, refresh);
+  ch.subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+      await ch.track({ nome: _userName || user.email, role: _userRole, at: Date.now() });
+    }
+  });
+}
+function updatePresenceUI(n) {
+  const el = document.getElementById('npres');
+  const txt = document.getElementById('npresTxt');
+  if (!el || !txt) return;
+  const k = Math.max(1, n || 1);
+  txt.textContent = k === 1 ? '1 pessoa online' : (k + ' pessoas online');
+  el.classList.add('live');
+  el.title = k === 1
+    ? 'Só tu tens o dashboard aberto agora'
+    : (k + ' pessoas têm o dashboard aberto agora');
+}
+
+async function onSignedIn(user) {
+  // Load profile
+  const { data: prof } = await _supa.from('profiles').select('nome,role').eq('id', user.id).single();
+  _userRole = prof?.role ?? 'operator';
+  _userName = prof?.nome ?? user.email;
+
+  // Show app, hide login
+  document.getElementById('page-login').style.display = 'none';
+  document.getElementById('main-nav').style.display = '';
+  document.getElementById('app-pages').style.display = '';
+
+  // Nav role badge
+  const roleLabels = { manager: 'Manager', operator: 'Operador' };
+  document.getElementById('nrole').textContent = roleLabels[_userRole] ?? _userRole;
+  document.getElementById('nnome').textContent = _userName;
+
+  // Show Carregar Excel and Limpar only for managers
+  if (_userRole === 'manager') {
+    document.getElementById('btnXL').style.display = '';
+    const bl=document.getElementById('btnLimpar');if(bl)bl.style.display='';
+  }
+
+  // Show/hide Planeamento tab based on role
+  document.getElementById('tab-plan').style.display = _userRole === 'manager' ? '' : 'none';
+
+  // Load today's plan from Supabase (source of truth)
+  await loadTodayPlan();
+
+  // Carregar pausas do Supabase (source of truth)
+  await loadPausasFromSupabase();
+
+  // Subscribe to realtime changes
+  subscribeRealtime();
+
+  // Indicador de presença (quem tem o dashboard aberto agora)
+  startPresence(user);
+
+  // localStorage only as fallback if Supabase returned nothing for today
+  const hasSupabaseData = [1,2,3,4,5,6].some(l => S.plan[l].length > 0);
+  if (!hasSupabaseData) {
+    try {
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved) deserializeState(saved);
+    } catch(e) {}
+  }
+
+  const hasData = [1,2,3,4,5,6].some(l => S.plan[l].length > 0);
+  if (hasData) { const u = document.getElementById('upz'); if(u) u.style.display = 'none'; }
+
+  // Restaurar página guardada (ou default por role)
+  const savedPage = (() => { try { return localStorage.getItem('nobre_curPage'); } catch(e) { return null; } })();
+  const defaultPage = _userRole === 'manager' ? 'page-plan' : 'page-dash';
+  const pageToGo = (savedPage && document.getElementById(savedPage)) ? savedPage : defaultPage;
+  goTo(pageToGo);
+  renderPlan();
+  renderDash();
+}
+
+// ── Load only order states (lightweight, for realtime updates) ──
+async function loadOrderStates(isInitial = false) {
+  const today = new Date().toISOString().slice(0,10);
+  const { data: plan } = await _supa.from('daily_plans').select('id').eq('plan_date', today).single();
+  if (!plan) return;
+  const allIds = [1,2,3,4,5,6].flatMap(l => S.plan[l].map(o => o._id)).filter(Boolean);
+  if (!allIds.length) return;
+  const { data: states } = await _supa.from('order_state').select('*').in('order_id', allIds);
+  if (!states) return;
+  const stateMap = {};
+  states.forEach(s => { stateMap[s.order_id] = s; });
+  [1,2,3,4,5,6].forEach(l => {
+    S.plan[l].forEach(o => {
+      if (!o._id || !stateMap[o._id]) return;
+      const st = stateMap[o._id];
+      // Merge: DB data takes precedence but don't clear local pending signals
+      // that haven't been saved yet
+      o.rows.d = st.rows_d || {};
+      o.rows.a = st.rows_a || {};
+      o.rows.e = st.rows_e || {};
+      // For ls (lote signals): merge — keep local confirmed/pending not yet in DB
+      const dbLs = st.lotes || {};
+      const mergedLs = {...(o.ls||{})};
+      // '__done__' tratado explicitamente (não via +ss → NaN)
+      if (dbLs['__done__']) {
+        mergedLs['__done__'] = dbLs['__done__'];
+        o._manualDone = true;
+      } else if (isInitial) {
+        // Só limpar no carregamento inicial — realtime pode ter estado obsoleto
+        delete mergedLs['__done__'];
+        if (!o._manualDone) o._manualDone = false;
+      }
+      // Slots numéricos: DB confirmed always wins
+      Object.entries(dbLs).forEach(([ss, v]) => {
+        if (ss === '__done__') return;
+        if (v.st === 'confirmed') mergedLs[+ss] = v;
+        else if (!mergedLs[+ss]) mergedLs[+ss] = v;
+      });
+      o.ls = mergedLs;
+    });
+  });
+}
+
+// ── Load today's plan from Supabase ──
+async function loadTodayPlan() {
+  const today = new Date().toISOString().slice(0,10);
+  const { data: plan } = await _supa.from('daily_plans').select('id').eq('plan_date', today).single();
+  if (!plan) return;
+
+  const { data: orders } = await _supa
+    .from('plan_orders').select('id,linha,position,pi,sku,ordem,kgs,hora,start_slot')
+    .eq('plan_id', plan.id).order('linha').order('position');
+  if (!orders || !orders.length) return;
+
+  const { data: states } = await _supa
+    .from('order_state').select('*').in('order_id', orders.map(o => o.id));
+  const stateMap = {};
+  (states||[]).forEach(s => { stateMap[s.order_id] = s; });
+
+  // Clear existing plan
+  [1,2,3,4,5,6].forEach(l => S.plan[l] = []);
+
+  orders.forEach(o => {
+    const st = stateMap[o.id] || {};
+    S.plan[o.linha].push({
+      _id:       o.id,
+      pi:        o.pi,
+      sku:       o.sku || '',
+      ordem:     o.ordem || '',
+      kgs:       o.kgs || 0,
+      hora:      o.hora || '06:00',
+      startSlot: o.start_slot || 0,
+      rows: {
+        d: st.rows_d || {},
+        a: st.rows_a || {},
+        e: st.rows_e || {},
+      },
+      ls: st.lotes || {},
+    });
+  });
+
+  const upz = document.getElementById('upz');
+  if (upz) upz.style.display = 'none';
+}
+
+// ── Save plan to Supabase (manager only) ──
+async function savePlanToSupabase() {
+  if (_userRole !== 'manager') return;
+  const today = new Date().toISOString().slice(0,10);
+  const { data: { user } } = await _supa.auth.getUser();
+
+  // Upsert daily plan
+  const { data: plan, error: pe } = await _supa.from('daily_plans')
+    .upsert({ plan_date: today, created_by: user.id }, { onConflict: 'plan_date' })
+    .select('id').single();
+  if (pe || !plan) return;
+
+  // Delete old orders and re-insert
+  await _supa.from('plan_orders').delete().eq('plan_id', plan.id);
+
+  const rows = [];
+  [1,2,3,4,5,6].forEach(l => {
+    S.plan[l].forEach((o, i) => {
+      rows.push({ plan_id: plan.id, linha: l, position: i, pi: o.pi,
+        sku: o.sku || null, ordem: o.ordem, kgs: o.kgs, hora: o.hora, start_slot: o.startSlot });
+    });
+  });
+  if (rows.length) {
+    const { data: inserted } = await _supa.from('plan_orders').insert(rows).select('id,linha,position');
+    // Map back _id to state
+    if (inserted) {
+      inserted.forEach(r => {
+        const o = S.plan[r.linha][r.position];
+        if (o) o._id = r.id;
+      });
+    }
+  }
+}
+
+// ── Save order state to Supabase ──
+async function saveOrderState(o) {
+  // Se não tem _id, tentar recuperar via ordem lookup
+  if (!o._id) {
+    if (!o.ordem) return;
+    const today = new Date().toISOString().slice(0,10);
+    const { data: plan } = await _supa.from('daily_plans').select('id').eq('plan_date', today).single();
+    if (!plan) return;
+    const { data: found } = await _supa.from('plan_orders')
+      .select('id').eq('plan_id', plan.id).eq('ordem', o.ordem).single();
+    if (found) o._id = found.id;
+    if (!o._id) return;
+  }
+  try {
+    const { data: { user } } = await _supa.auth.getUser();
+    if (!user) return;
+    await _supa.from('order_state').upsert({
+      order_id:   o._id,
+      rows_d:     o.rows.d,
+      rows_a:     o.rows.a,
+      rows_e:     o.rows.e,
+      lotes:      o.ls,
+      updated_by: user.id,
+    }, { onConflict: 'order_id' });
+    // Also keep localStorage in sync
+    pushState();
+  } catch(e) {
+    console.warn('saveOrderState failed:', e);
+    pushState(); // fallback to localStorage
+  }
+}
+
+// ── Realtime subscription ──
+function subscribeRealtime() {
+  if (_realtimeCh) _supa.removeChannel(_realtimeCh);
+  _realtimeCh = _supa.channel('nobre-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'order_state' }, async (payload) => {
+      // Only reload states, not the full plan (avoids wiping local unsaved data)
+      await loadOrderStates();
+      renderDash();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'plan_orders' }, async () => {
+      await loadTodayPlan();
+      renderPlan(); renderDash();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'pausas' }, async () => {
+      await loadPausasFromSupabase();
+      renderPausas(); renderDash();
+    })
+    .subscribe();
+}
+
+// ── INIT ──
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+// ── Recarregar do Supabase quando o tab volta a ficar activo ──
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && _userRole) {
+    // Reload order states when tab becomes active again
+    await loadOrderStates(true);
+    await loadPausasFromSupabase();
+    renderDash();
+    renderPlan();
+  }
+});
+
+// ── Guardar no localStorage antes de sair ──
+window.addEventListener('beforeunload', () => {
+  try { pushState(); } catch(e) {}
+});
+
+_supa.auth.onAuthStateChange((_event, session) => {
+  if (session) {
+    onSignedIn(session.user);
+  } else {
+    document.getElementById('page-login').style.display = '';
+    document.getElementById('main-nav').style.display = 'none';
+  }
+});
+
+// Check existing session on load
+_supa.auth.getSession().then(({ data: { session } }) => {
+  if (!session) {
+    document.getElementById('page-login').style.display = '';
+  }
+});
+if(location.protocol==='file:'){
+  _userRole='manager';_userName='Manager (local)';
+  document.getElementById('page-login').style.display='none';
+  document.getElementById('main-nav').style.display='';
+  document.getElementById('app-pages').style.display='';
+  document.getElementById('nrole').textContent='Manager';
+  document.getElementById('nnome').textContent='Local';
+  document.getElementById('btnXL').style.display='';
+  const _bl=document.getElementById('btnLimpar');if(_bl)_bl.style.display='';
+  if(document.getElementById('tab-plan'))document.getElementById('tab-plan').style.display='';
+  try{const sv=localStorage.getItem(LS_KEY);if(sv&&deserializeState(sv)){const hd=[1,2,3,4,5,6].some(l=>S.plan[l].length>0);if(hd){const u=document.getElementById('upz');if(u)u.style.display='none';}}}catch(e){}
+  renderPlan();renderDash();
+}
+
+// renderPlan already wrapped above with pushState — no second wrap needed
+
+setInterval(()=>{
+  if(!document.getElementById('simTime').value&&document.getElementById('page-dash').classList.contains('active')) renderDash();
+},60000);
+</script>
+</body>
+</html>
